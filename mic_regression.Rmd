@@ -1,0 +1,392 @@
+---
+title: "MIC regression"
+author: "Lucy + Thel + Rhys"
+date: "2025-11-06"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r pkgs, message=FALSE}
+library(tidyverse)
+library(cowplot)
+library(readxl)
+library(viridisLite)
+
+# install_github("lu-harr/iddoPal")
+library(iddoPal)
+# install_github("lu-harr/looseVis")
+library(looseVis)
+
+dat <- read_xlsx("GAS_SR_Raw_50_90_NOS_errors removed_20250801_FINAL.xlsx")
+```
+
+#### Populate names of WHO regions:
+
+```{r who}
+who_df <- matrix(c(c("1", "Africa"),
+                c("2","Americas"),
+                c("3", "Eastern Mediterranean"),
+                c("4","Europe"),
+                c("5", "Southeast Asia"),
+                c("6", "Western Pacific")),
+                ncol = 2, byrow = TRUE) %>%
+  data.frame() %>%
+  setNames(c("nume", "name"))
+
+who_lst = who_df$name
+names(who_lst) = who_df$nume
+  
+# and join to data:
+dat <- dat %>%
+  mutate(who = as.factor(who)) %>%
+  left_join(who_df, by = join_by(who == nume)) %>%
+  mutate(who_name = ifelse(is.na(name), "Not assigned", name)) %>%
+  # need to put both MIC_nos and MIC_90 in one column
+  mutate(mic_mix = case_when(!is.na(micnos_1) ~ micnos_1,
+                             !is.na(mic90_1) ~ mic90_1,
+                             TRUE ~ NA),
+         weight_mic = 1 / mic_mix)
+
+```
+
+#### Variance-weighted least squares
+
+```{r}
+mod_unweighted = lm(mic_mix ~ isolate_yr, dat)
+summary(mod_unweighted)
+
+# setting weight to mean absolute residuals
+wts <- data.frame(isolate_yr = dat$isolate_yr,
+                  resid = mod_unweighted$residuals) %>%
+  group_by(isolate_yr) %>%
+  summarise(wt = median(abs(resid)))
+
+dat <- dat %>%
+  left_join(wts)
+
+# a quick summary:
+par(mfrow = c(1,2))
+pred <- predict(mod_unweighted, dat)
+plot(dat$isolate_yr, dat$mic_mix, cex = scale_cex(dat$count, max_cex = 5), main = "(unweighted) ordinary least squares")
+abline(mod_unweighted, col="red")
+plot(pred, dat$mic_mix - pred, main = "Residuals over fitted")
+
+# now apply weights to mic_mix
+```
+
+
+#### Here's the bubble plot with both the MIC_nos and the MIC_90s:
+
+```{r}
+yticks <- c(0, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+
+p <- ggplot(dat %>%
+         filter(!is.na(mic_mix)) %>%
+         # put smaller points in front:
+         arrange(desc(count)),
+       aes(x = isolate_yr, y = mic_mix)) +
+  geom_point(aes(col = who_name, 
+                 size = count), alpha = 0.5) +
+  # pop a line on there
+  # geom_smooth(method = "lm", se = FALSE, col = "darkgrey") +
+  scale_color_discrete(name = "WHO Region") +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates") +
+  # set specific ticks on y axis: (could transform this too if we think we need to ...)
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC_nos") +
+  labs(title = "MIC_nos + MIC_90 over time (points not grouped)") +
+  theme_bw()
+
+p
+```
+
+#### Now here's a bubble plot with regression:
+
+```{r}
+gap <- 1
+
+# cobble something together ...
+pal <- c(rev(viridis(4)),  
+         pals$loosepal[3],
+         iddo_palettes$iddo[1],
+         "orange") %>% 
+  unname()
+
+# model weighted with weights from above
+mod_weighted <- lm(mic_mix ~ isolate_yr, dat, weights = wt)
+summary(mod_weighted)
+confint(mod_weighted)
+tmp <- predict(mod_weighted, data.frame(isolate_yr = 1928:2017), se.fit = TRUE)
+
+p <- ggplot(dat %>%
+            filter(!is.na(mic_mix)) %>%
+            group_by(isolate_yr, mic_mix, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         # put smaller points in front:
+         arrange(desc(count)),
+       aes(x = isolate_yr, y = mic_mix)) +
+  coord_cartesian(ylim = c(0, 0.125)) +
+  # pop a line on there
+  geom_smooth(data = dat %>% filter(!is.na(mic_mix)),
+              #mapping = aes(weight = count),
+              #mapping = aes(weight = weight_mic),
+              mapping = aes(weight = wt),
+              method = "lm", se = TRUE, col = "darkgrey", linewidth = 0.8) +
+  #geom_smooth() +
+  geom_point(aes(col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", type = pal) +
+  # scale_size_continuous(range = c(1,6), name = "Number of isolates",
+  #                       trans="log10") +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates") +
+  # set specific ticks on y axis: (could transform this too if we think we need to ...)
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC"#,
+                     #limits = c(0, 0.125)
+                     ) +
+  scale_x_continuous(limits = c(1928 - gap, 2017 + gap)) +
+  #labs(title = "MIC_nos + MIC_90 over time (points grouped, variance-weighted LS)") +
+  labs(x = "Year", ylab = "MIC") +
+  theme_bw()
+
+p
+
+ggsave("figs/mic_mixed_bubbles.png", 
+       height = 6, width = 9, scale = 0.8)
+
+```
+
+#### Here's the same plot with some breaks in the x axis:
+
+```{r}
+# would love to transform the y axis but if i can't extract the ribbon from
+# geom_smooth then I can't tell it not to freak out at zero ..
+
+# sad - doesn't look like coord_cartesian will work with axis breaks
+# https://github.com/YuLab-SMU/ggbreak/issues/59
+library(ggbreak)
+p + scale_x_break(c(1928 + gap, 1950 - gap)) +
+  coord_cartesian(ylim = c(0, 0.125)) +
+  scale_x_break(c(1950 + gap, 1968)) +
+  scale_x_continuous(breaks = c(1928, 1950, seq(1960, 2021, 10)), 
+                     limits = c(1928 - gap, 2016 + gap)) +
+  geom_hline(aes(yintercept = 0)) +
+  xlab("Year") + ylab("MIC")
+
+ggsave("figs/mic_mixed_bubbles_with_breaks.png", 
+       height = 6, width = 9, scale = 0.8)
+# make colours viridis plus an orange maybe?
+```
+
+#### Now here's a plot with the y-axis logged but *not* the regression: 
+(so regression's still on a linear scale)
+
+```{r}
+Y_LOWER <- 0.0018
+X_LOWER <- 1925
+mod_weighted <- lm(mic_mix ~ isolate_yr, dat, weights = wt)
+confint(mod_weighted)
+
+ci <- predict(lm(mic_mix~isolate_yr, dat, weights = wt), 
+                 newdata = data.frame(isolate_yr = seq(X_LOWER,
+                                                       max(dat$isolate_yr) + 2)),
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat$isolate_yr) + 2))
+
+# okay: need to transform y-axis and truncate
+gap <- 1
+
+# cobble something together ...
+pal <- c(rev(viridis(4)),  
+         pals$loosepal[3],
+         iddo_palettes$iddo[1],
+         "orange") %>% 
+  unname()
+
+yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+
+library(ggbreak)
+p <- ggplot(dat %>%
+            filter(!is.na(mic_mix)) %>%
+            group_by(isolate_yr, mic_mix, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = lwr, ymax = upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = mic_mix,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", type = pal) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates") +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
+  scale_x_continuous(limits = c(X_LOWER, 2017 + 2)) +
+  labs(x = "Year", ylab = "MIC") +
+  coord_trans(y = "log2", ylim = c(Y_LOWER, 0.14), expand = FALSE) +
+  theme_bw()
+
+p
+
+ggsave("figs/mic_mixed_bubbles_logged.png", 
+       height = 6, width = 9, scale = 0.8)
+
+```
+
+#### Alternatively, do the regression on the log scale and re-exp the labels
+
+```{r}
+# apply log to the mics:
+dat <- dat %>%
+  mutate(mic_logged = log2(mic_mix))
+
+mod_unweighted = lm(mic_logged ~ isolate_yr, dat)
+summary(mod_unweighted)
+
+# setting weight to mean absolute residuals
+wts <- data.frame(isolate_yr = dat$isolate_yr,
+                  resid = mod_unweighted$residuals) %>%
+  group_by(isolate_yr) %>%
+  summarise(wt = median(abs(resid)))
+
+dat <- dat %>%
+  left_join(wts)
+
+mod_weighted <- lm(mic_logged ~ isolate_yr, dat, weights = wt)
+confint(mod_weighted)
+summary(mod_weighted)
+
+Y_LOWER <- log2(0.0018)
+X_LOWER <- 1925
+
+ci <- predict(lm(mic_logged ~ isolate_yr, dat, weights = wt), 
+                 newdata = data.frame(isolate_yr = seq(X_LOWER,
+                                                       max(dat$isolate_yr) + 2)),
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat$isolate_yr) + 2))
+
+gap <- 1
+
+
+# cobble something together ...
+pal <- c(rev(viridis(4)),  
+         pals$loosepal[3],
+         iddo_palettes$iddo[1],
+         "orange") %>% 
+  unname()
+
+yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+
+p <- ggplot(dat %>%
+            filter(!is.na(mic_mix)) %>%
+            group_by(isolate_yr, mic_mix, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = 2**fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = mic_mix,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", type = pal) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", breaks = c(1, 10, 100, 1000)) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
+  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0)) +
+  labs(x = "Year", ylab = "MIC") +
+  coord_trans(y = "log2") + #, ylim = c(Y_LOWER, 0.14), expand = FALSE) +
+  theme_bw()
+
+p
+
+ggsave("figs/mic_mixed_bubbles_all_logged.png", 
+       height = 6, width = 9, scale = 0.8)
+
+```
+
+#### Ordinal regression coming up down here!
+
+```{r}
+library(MASS)
+
+ftable(dat$mic_mix)
+
+# say we bin MIC ..?
+bins <- c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+dat$mic_mix_binned <- cut(dat$mic_mix,
+                          breaks = c(0, bins, max(dat$mic_mix)),
+                          ordered_result = TRUE)
+# I've totally forgotten how we got to MIC90s and MICNosses so this ^ may not be 
+# appropriate
+
+ftable(dat$mic_mix_binned)
+
+# Fit the model - no need to log: that would be for visualisation purposes only under ordinal model
+# tried using wts from logged model ......... not thinking too hard about that but we should at some point
+# it looks like weights need to be integers as we end up assuming binomial glm for ordinal *logistic* regression
+# haven't thought too hard about this ... may need to be probit link
+model <- polr(mic_mix_binned ~ isolate_yr, data = dat, Hess = TRUE)
+
+summary(model)
+# note the slope here
+
+new_data = data.frame(isolate_yr = seq(X_LOWER, max(dat$isolate_yr) + 2))
+preds <- predict(model, 
+                 newdata = new_data,
+                 type = "probs") %>%
+  as.data.frame() %>%
+  mutate(max_probs = max.col(across(starts_with("(")))) %>%
+  mutate(isolate_yr = new_data$isolate_yr)
+
+preds_long <- pivot_longer(preds, starts_with("(")) %>%
+  mutate(lower = str_extract(name, "(?<=\\()[^,]+") %>% as.numeric(),
+         upper = str_extract(name, "(?<=,)[^]]+") %>% as.numeric(),
+         height = lower + (upper - lower)*value) %>%
+  filter(lower != 0)
+
+# so now we have colour bars representing class probability between the lower 
+# and upper extents of the bins ... which don't change much because there isn't
+# much change in MIC slope over time
+ggplot(data = dat) +
+  geom_point(aes(x = isolate_yr, y = mic_mix)) +
+  scale_y_continuous(trans = "log2", breaks = bins) +
+  geom_ribbon(data = preds_long, aes(ymin = lower, ymax = height, fill = name, x = isolate_yr), 
+              alpha = 0.5) +
+  scale_fill_discrete("MIC bin") +
+  # and this black line is the predicted class, which stays the same for the duration of the data
+  # (the -1 is because I removed the bottom bin)
+  geom_hline(yintercept = bins[preds$max_probs[1] - 1])
+
+```
+
+
+
+
+
+
