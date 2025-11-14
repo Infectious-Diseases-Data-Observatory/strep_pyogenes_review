@@ -20,7 +20,7 @@ library(iddoPal)
 # install_github("lu-harr/looseVis")
 library(looseVis)
 
-dat <- read_xlsx("GAS_SR_Raw_50_90_NOS_errors removed_20250801_FINAL.xlsx")
+dat <- read_excel("data/GAS_SR_Raw_50_90_NOS_formatted_20251106.xlsx")
 ```
 
 #### Populate names of WHO regions:
@@ -316,7 +316,7 @@ p <- ggplot(dat %>%
                  col = who_name, 
                  size = count), alpha = 0.5) +
   scale_color_discrete(name = "WHO Region", type = pal) +
-  scale_size_continuous(range = c(1,10), name = "Number of isolates", breaks = c(1, 10, 100, 1000)) +
+  scale_size_continuous(range = c(5,15), name = "Number of isolates", breaks = c(1, 10, 100, 1000)) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
   scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0)) +
   labs(x = "Year", ylab = "MIC") +
@@ -328,6 +328,7 @@ p
 ggsave("figs/mic_mixed_bubbles_all_logged.png", 
        height = 6, width = 9, scale = 0.8)
 
+plot(mod_weighted)
 ```
 
 #### Ordinal regression coming up down here!
