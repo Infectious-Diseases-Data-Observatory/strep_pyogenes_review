@@ -23,6 +23,48 @@ library(looseVis)
 dat <- read_xlsx("GAS_SR_Raw_50_90_NOS_errors removed_20250801_FINAL.xlsx")
 ```
 
+Here are some quick summary stats:
+
+```{r}
+# number of isolates
+sum(dat$count)
+
+# number of isolates per country
+dat %>%
+  group_by(country) %>%
+  summarise(n = sum(count)) %>%
+  arrange(desc(n))
+
+# number of isolates per who region
+dat %>%
+  group_by(who) %>%
+  summarise(n = sum(count)) %>%
+  arrange(desc(n))
+
+# combined mic
+mic <- dat %>%
+  mutate(nos_90_comb = ifelse(is.na(micnos_1), mic90_1, micnos_1))
+
+which(is.na(mic$nos_90_comb))
+
+nos_vec <- rep(mic$micnos_1, mic$count)
+median(nos_vec, na.rm=TRUE)
+mean(nos_vec, na.rm=TRUE)
+hist(nos_vec, breaks=100)
+abline(v = median(nos_vec, na.rm=TRUE), col="blue")
+abline(v = mean(nos_vec, na.rm=TRUE), col="red")
+
+# represent entries with multiple isolates multiple times:
+nos_90_comb_vec <- rep(mic$nos_90_comb, mic$count)
+length(nos_90_comb_vec)
+median(nos_90_comb_vec)
+quantile(nos_90_comb_vec, probs = c(0.1, 0.5, 0.9))
+summary(nos_90_comb_vec)
+hist(nos_90_comb_vec)
+```
+
+And now onto the regression ...
+
 #### Populate names of WHO regions:
 
 ```{r who}
@@ -272,6 +314,15 @@ dat <- dat %>%
 mod_weighted <- lm(mic_logged ~ isolate_yr, dat, weights = wt)
 confint(mod_weighted)
 summary(mod_weighted)
+
+# this is slope on log-scale:
+coefficients(mod_weighted)[2]
+2**(coefficients(mod_weighted)[2])
+
+# Here's what that looks like unlogged:
+plot(dat$isolate_yr, dat$mic_mix)
+yyy = seq(min(dat$isolate_yr), max(dat$isolate_yr))
+lines(yyy, 2**predict(mod_weighted, data.frame(isolate_yr = yyy)))
 
 Y_LOWER <- log2(0.0018)
 X_LOWER <- 1925
