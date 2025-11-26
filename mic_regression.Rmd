@@ -20,7 +20,7 @@ library(iddoPal)
 # install_github("lu-harr/looseVis")
 library(looseVis)
 
-dat <- read_xlsx("GAS_SR_Raw_50_90_NOS_errors removed_20250801_FINAL.xlsx")
+dat <- read_excel("GAS_SR_Raw_50_90_NOS_formatted_20251106.xlsx")
 ```
 
 Here are some quick summary stats:
@@ -60,7 +60,7 @@ length(nos_90_comb_vec)
 median(nos_90_comb_vec)
 quantile(nos_90_comb_vec, probs = c(0.1, 0.5, 0.9))
 summary(nos_90_comb_vec)
-hist(nos_90_comb_vec)
+hist(nos_90_comb_vec, breaks = 100)
 ```
 
 And now onto the regression ...
@@ -379,9 +379,13 @@ p
 ggsave("figs/mic_mixed_bubbles_all_logged.png", 
        height = 6, width = 9, scale = 0.8)
 
+plot(mod_weighted)
 ```
 
-#### Ordinal regression coming up down here!
+#### Ordinal regression
+
+We could really treat MICs as categories as intermediate MICs are not (usually) tested. For this reason, we've had a look at ordinal regression in the chunk below.
+
 
 ```{r}
 library(MASS)
@@ -435,3 +439,7 @@ ggplot(data = dat) +
   geom_hline(yintercept = bins[preds$max_probs[1] - 1])
 
 ```
+
+In the end, we didn't go with ordinal regression, as the class with the greatest probability did not change over time! And the linear regression gave us a similar result!
+
+
