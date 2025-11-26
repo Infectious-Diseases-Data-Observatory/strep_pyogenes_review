@@ -435,9 +435,3 @@ ggplot(data = dat) +
   geom_hline(yintercept = bins[preds$max_probs[1] - 1])
 
 ```
-
-
-
-
-
-
