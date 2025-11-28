@@ -3,7 +3,7 @@ source("code/preamble.R")
 
 gas_country = gas_sr %>% 
   uncount(count) %>% 
-  group_by(alpha_3_code, year_grp) %>%
+  group_by(alpha_3_code, med_grp) %>%
   summarise(mean_mic = mean(mic90nos, na.rm = TRUE),
             sd_mic = sd(mic90nos, na.rm = TRUE),
             n = n(),
@@ -68,15 +68,15 @@ gas_mean[which(gas_mean$alpha_3_code == "GLOBAL"), "entity"] = "GLOBAL"
 plot_bubble = ggplot(gas_mean,
        aes(x = mean_mic,
            y = fct_rev(alpha_3_code),
-           group = year_grp,
-           colour = year_grp)) +
+           group = med_grp,
+           colour = med_grp)) +
   geom_line(aes(group = alpha_3_code), colour = "gray", linewidth = 1.1) +
   geom_hline(yintercept = 1.4, linetype = "dashed", colour = "gray", linewidth = 1.2) +
   geom_point(data = gas_mean,
              size = 5, alpha = 0.95, show.legend = FALSE) +
-  geom_point(data = gas_mean %>% filter(year_grp == 2),
+  geom_point(data = gas_mean %>% filter(med_grp == 2),
              size = 5.8, alpha = 1, color = "white") +
-  geom_point(data = gas_mean %>% filter(year_grp == 2),
+  geom_point(data = gas_mean %>% filter(med_grp == 2),
              size = 5, alpha = 0.75, show.legend = FALSE) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, show.legend = FALSE,
                 color = "black")+
@@ -92,9 +92,9 @@ plot_bubble = ggplot(gas_mean,
                      limits = c(-0.017,0.12))+
   scale_y_discrete(expand = c(0,4))+
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.011), hjust = 1,
-            data = gas_mean %>% filter(year_grp == 1), show.legend = FALSE) +
+            data = gas_mean %>% filter(med_grp == 1), show.legend = FALSE) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
-            data = gas_mean %>% filter(year_grp == 2), show.legend = FALSE) +
+            data = gas_mean %>% filter(med_grp == 2), show.legend = FALSE) +
   geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 47.5), show.legend = FALSE) +
   geom_text(mapping = aes(label = "Before and\non 2000", x = -0.015, y= 46),
             show.legend = FALSE, colour = "#5D5D5D") +
@@ -175,15 +175,15 @@ write_csv(gas_paired, "data/cleaned/forest_data.csv")
 plot_bubble = ggplot(gas_paired,
                      aes(x = mean_mic,
                          y = fct_rev(entity),
-                         group = year_grp,
-                         colour = year_grp)) +
+                         group = med_grp,
+                         colour = med_grp)) +
   geom_line(aes(group = entity), colour = "gray", linewidth = 1.1) +
   geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
   geom_point(data = gas_paired,
              size = 5, alpha = 0.95, show.legend = FALSE) +
-  geom_point(data = gas_paired %>% filter(year_grp == 2),
+  geom_point(data = gas_paired %>% filter(med_grp == 2),
              size = 5.8, alpha = 1, color = "white") +
-  geom_point(data = gas_paired %>% filter(year_grp == 2),
+  geom_point(data = gas_paired %>% filter(med_grp == 2),
              size = 5, alpha = 0.75, show.legend = FALSE) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, show.legend = FALSE,
                 color = "black")+
@@ -199,9 +199,9 @@ plot_bubble = ggplot(gas_paired,
                      limits = c(-0.017,0.07))+
   scale_y_discrete(expand = c(0,4))+
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.011), hjust = 1,
-            data = gas_paired %>% filter(year_grp == 1), show.legend = FALSE) +
+            data = gas_paired %>% filter(med_grp == 1), show.legend = FALSE) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
-            data = gas_paired %>% filter(year_grp == 2), show.legend = FALSE) +
+            data = gas_paired %>% filter(med_grp == 2), show.legend = FALSE) +
   geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.0085, y= 27.5), show.legend = FALSE) +
   geom_text(mapping = aes(label = "Before and\non 2000", x = -0.014, y= 26.25),
             show.legend = FALSE, colour = "#5D5D5D") +
