@@ -1,6 +1,5 @@
 ---
 title: "MIC regression"
-author: "Lucy + Thel + Rhys"
 date: "2025-11-06"
 output: pdf_document
 ---
@@ -59,6 +58,7 @@ nos_90_comb_vec <- rep(mic$nos_90_comb, mic$count)
 length(nos_90_comb_vec)
 median(nos_90_comb_vec)
 quantile(nos_90_comb_vec, probs = c(0.1, 0.5, 0.9))
+range(nos_90_comb_vec)
 summary(nos_90_comb_vec)
 hist(nos_90_comb_vec, breaks = 100)
 ```
@@ -292,13 +292,18 @@ ggsave("figs/mic_mixed_bubbles_logged.png",
 
 ```
 
+The bounds of the confidence interval for mean MIC get a bit weird at low MICs (early years). What scale are we interpreting change in mean MIC on? Probably on the log scale also ... for this reason, we do the regression on the log scale below.
+
 #### Alternatively, do the regression on the log scale and re-exp the labels
+
+This is the model + visualisation we include in the manuscript. Given tested MICs are doubling, we carry out regression on the log2 scale.
 
 ```{r}
 # apply log to the mics:
 dat <- dat %>%
   mutate(mic_logged = log2(mic_mix))
 
+# fit an unweighted model to determine weights
 mod_unweighted = lm(mic_logged ~ isolate_yr, dat)
 summary(mod_unweighted)
 
@@ -318,11 +323,13 @@ summary(mod_weighted)
 # this is slope on log-scale:
 coefficients(mod_weighted)[2]
 2**(coefficients(mod_weighted)[2])
+2**confint(mod_weighted)[2,]
 
 # Here's what that looks like unlogged:
 plot(dat$isolate_yr, dat$mic_mix)
 yyy = seq(min(dat$isolate_yr), max(dat$isolate_yr))
 lines(yyy, 2**predict(mod_weighted, data.frame(isolate_yr = yyy)))
+# (pretty flat)
 
 Y_LOWER <- log2(0.0018)
 X_LOWER <- 1925
