@@ -75,6 +75,7 @@ dd_plot = ggplot(world_map %>%
                  filter(alpha_3_code == "LSO"), colour = "black", fill = "#E0E0E0",
                linewidth = 0.1, show.legend = FALSE)+
   scale_fill_viridis_c(values = c(0, 0.1, 0.2, 0.5, 1), na.value = "#E0E0E0") +
+  scale_size_continuous(range = c(2,6)) +
   theme(panel.background = element_rect(fill = "white"),
         plot.background = element_rect(fill = "white"),
         panel.grid = element_blank(),

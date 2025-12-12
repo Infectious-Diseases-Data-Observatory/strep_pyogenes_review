@@ -188,27 +188,37 @@ gas_paired = gas_mean %>%
 
 write_csv(gas_paired, "data/cleaned/forest_data.csv")
 
-plot_bubble = ggplot(gas_paired,
+plot_bubble = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                      aes(x = mean_mic,
                          y = fct_rev(entity),
                          group = mean_grp,
                          colour = mean_grp)) +
   geom_line(aes(group = entity), colour = "gray", linewidth = 1.1, alpha = 0.65) +
+  geom_vline(data = gas_global %>% filter(mean_grp == 1),
+             mapping = aes(xintercept = mean_mic),
+             colour = "#6EB7B4", linewidth = 1 #linetype = "dotdash",
+  ) +
+  geom_vline(data = gas_global %>% filter(mean_grp == 2),
+             mapping = aes(xintercept = mean_mic),
+             colour = "#88669C", linewidth = 1# linetype = "dotted",
+  ) +
   theme_minimal() +
-  geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
-  geom_point(data = gas_paired, mapping = aes(size = n),
+  # geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
+  geom_point(data = gas_paired%>% filter(alpha_3_code != "GLOBAL"), mapping = aes(size = n),
              alpha = 0.65, show.legend = TRUE) +        ## size = 5, 
-  scale_size_continuous(range = c(6,14)) +   ##, transform = "log10"
+  scale_size_continuous(range = c(4,10)) +   ##, transform = "log10"
   # geom_point(data = gas_paired %>% filter(med_grp == 2),
   #            size = 5.8, alpha = 1, color = "white") +
   # geom_point(data = gas_paired %>% filter(med_grp == 2),
   #            size = 5, alpha = 0.75, show.legend = FALSE) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
                 show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
-                data = gas_paired %>% filter(mean_grp == 1))+
+                data = gas_paired %>% filter(mean_grp == 1,
+                                             alpha_3_code != "GLOBAL"))+
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
                 show.legend = FALSE, colour = "#422D4E", linewidth = 0.8,
-                data = gas_paired %>% filter(mean_grp == 2))+
+                data = gas_paired %>% filter(mean_grp == 2,
+                                             alpha_3_code != "GLOBAL"))+
   scale_color_viridis_d(begin = 0.5, end = 0.05, 
                         labels = c("Before and on mean year", 
                                    "After mean year"))+
@@ -219,26 +229,38 @@ plot_bubble = ggplot(gas_paired,
         # axis.text.x = element_text(angle = 30, hjust = .9),
         axis.text.y = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  guides(color = guide_legend(override.aes = list(size = 6))) +
+  guides(color = guide_legend(override.aes = list(size = 10))) +
   scale_x_continuous(breaks = c(0.008,0.016,0.032, 0.048, 0.064, 0.12),
                      limits = c(-0.017,0.13))+
   scale_y_discrete(expand = c(0,2))+
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 1), show.legend = FALSE) +
+            data = gas_paired %>% filter(mean_grp == 1, 
+                                         alpha_3_code != "GLOBAL"), show.legend = FALSE) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 2), show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.0095, y= 32.5), show.legend = FALSE) +
+            data = gas_paired %>% filter(mean_grp == 2,
+                                         alpha_3_code != "GLOBAL"), show.legend = FALSE) +
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31), 
+            show.legend = FALSE, colour = "#5D5D5D") +
   # geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
   #           show.legend = FALSE, colour = "#5D5D5D") +
   # geom_text(mapping = aes(label = "After \nmean year", x = -0.003, y= 32.25), show.legend = FALSE,
   #           colour = "#5D5D5D") +
+
+  annotate("text", label = "Global before and \non mean year",
+           x = 0.035, y = 31.3, colour = "#6EB7B4") +
+  annotate("text", label = "Global after \nmean year",
+           x = 0.015, y = 31.3, colour = "#88669C") +
+  # geom_curve(aes(x = 0.03, xend = 0.024, y = 31.3, yend = 31.5), colour = "#0E131F",
+  #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = -0.5)+
+  # geom_curve(aes(x = 0.014, xend = 0.0204, y = 31.3, yend = 31.5), colour = "#0E131F",
+  #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = 0.5)+
   labs(x = "Mean MIC",
        y = "",
        size = "Proportion of Samples",
        colour = "")
 plot_bubble
 
-plot_regions = ggplot(gas_paired,
+plot_regions = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                       aes(y = fct_rev(entity)))+
   theme_classic() +
   scale_y_discrete(position = "right", expand = c(0,2))+
@@ -256,13 +278,14 @@ plot_regions = ggplot(gas_paired,
   geom_text(aes(label = who_region, x = 1), data = gas_paired %>% 
               group_by(who_region) %>% 
               slice(1) %>% 
-              ungroup(), hjust = 1, colour = "#5D5D5D", fontface  = "bold")+
+              ungroup() %>% 
+              filter(alpha_3_code != "GLOBAL"), hjust = 1, colour = "#5D5D5D", fontface  = "bold")+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
 
 plot_regions
 
-plot_diffs = ggplot(gas_paired,
+plot_diffs = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                     aes(y = fct_rev(entity)))+
   theme_classic() +
   theme(strip.background = element_blank(),
@@ -276,8 +299,8 @@ plot_diffs = ggplot(gas_paired,
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 32.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference", x = 5.2, y = 32.25, colour = "#5D5D5D") +
+  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "CI of \ndifference", x = 5.2, y = 31.25, colour = "#5D5D5D") +
   # geom_text(aes(label = "Difference in \nmeans", x = 1, y = 27), colour = "#5D5D5D")+
   # geom_text(aes(label = "CI of \ndifference", x = 5.2, y = 27), colour = "#5D5D5D")+
   geom_text(aes(label = round(change,3), x = 1), colour = "#5D5D5D")+
@@ -296,9 +319,16 @@ layout <- c(
 
 plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
-ggsave("mean_mic_forest_pairs_mean_2.tiff", path = "figures/", width = 17, height = 9.5)
+ggsave("mean_mic_forest_pairs_mean_3.tiff", path = "figures/", width = 17, height = 9.5)
 
 
+
+
+
+
+
+
+###############################################################################
 
 
 plot_bubble = ggplot(gas_paired,
@@ -395,3 +425,4 @@ plot_bubble = ggplot(gas_paired %>% filter(entity != "GLOBAL"),
        colour = "")+ 
   geom_vline(aes(xintercept = 0.02343562), colour = "#174F4D", lwd = 1.5, linetype = "dashed")+
   geom_vline(aes(xintercept = 0.02142750), colour = "#422D4E", lwd = 1.5, linetype = "dashed")
+
