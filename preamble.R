@@ -60,7 +60,15 @@ gas_sr[which(gas_sr$country == "Netherlands"), "country"] = "Netherlands (Kingdo
 gas_sr = gas_sr %>% 
   left_join(world_income, by = c("country")) %>% 
   mutate(country = str_to_title(country),
-         year_grp = as.factor(year_grp)) 
+         year_grp = as.factor(year_grp)) %>% 
+  group_by(alpha_3_code) %>% 
+  mutate(median_year = median(isolate_yr, na.rm = TRUE),
+         med_grp = if_else(isolate_yr <= median_year, 1, 2),
+         midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
+         midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
+         mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
+         mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>% 
+  ungroup()
 
 ready <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>% 
   filter(redcap_event_name == "data_extraction_arm_2") %>%
