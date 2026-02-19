@@ -7,20 +7,18 @@ library(viridisLite)
 library(cowplot)
 library(scales)
 
-setwd("~/R/Strep A")
+centroids = read_csv("data/centroids.csv", show_col_types = FALSE,
+                     na = "empty")
 
-centroids = read_csv("data/centroids.csv", show_col_types = FALSE, 
-                     na = "empty") 
-
-who_regions = read_csv("data/who-regions.csv", show_col_types = FALSE, guess_max = Inf) %>% 
+who_regions = read_csv("data/who-regions.csv", show_col_types = FALSE, guess_max = Inf) %>%
   clean_names()
-  
-gas_sr =  read_excel("data/GAS_SR_Raw_50_90_NOS_formatted_20251106.xlsx") %>% 
-  select(-redcap_repeat_instrument, -redcap_event_name) %>% 
+
+gas_sr =  read_excel("data/GAS_SR_Raw_50_90_NOS_formatted_20251106.xlsx") %>%
+  select(-redcap_repeat_instrument, -redcap_event_name) %>%
   mutate(mic90nos = mic90_1,
          year_grp = if_else(isolate_yr <= 2000, 1, 2))
 
-gas_sr[which(is.na(gas_sr$mic90nos)), "mic90nos"] = 
+gas_sr[which(is.na(gas_sr$mic90nos)), "mic90nos"] =
   gas_sr[which(is.na(gas_sr$mic90nos)), "micnos_1"]
 
 # gas_sr[which(gas_sr$country == "Taiwan"), "country"] = "Taiwan (Province of China)"
@@ -57,27 +55,27 @@ gas_sr[which(gas_sr$country == "Turkey"), "country"] = "Turkiye"
 # gas_sr[which(gas_sr$country == "Iran"), "country"] = "Iran (Islamic Republic of)"
 gas_sr[which(gas_sr$country == "Netherlands"), "country"] = "Netherlands (Kingdom of the)"
 
-gas_sr = gas_sr %>% 
-  left_join(world_income, by = c("country")) %>% 
+gas_sr = gas_sr %>%
+  left_join(world_income, by = c("country")) %>%
   mutate(country = str_to_title(country),
-         year_grp = as.factor(year_grp)) %>% 
-  group_by(alpha_3_code) %>% 
+         year_grp = as.factor(year_grp)) %>%
+  group_by(alpha_3_code) %>%
   mutate(median_year = median(isolate_yr, na.rm = TRUE),
          med_grp = if_else(isolate_yr <= median_year, 1, 2),
          midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
          midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
          mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
-         mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>% 
+         mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
   ungroup()
 
-ready <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>% 
+ready <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>%
   filter(redcap_event_name == "data_extraction_arm_2") %>%
   dplyr::select(ddwho1,ddcountry1,ddno1, redcap_repeat_instrument, record_id) %>%
   rename("who" = "ddwho1",
          "country" = "ddcountry1",
          "count" = "ddno1")
 
-raw <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>% 
+raw <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>%
   filter(redcap_event_name == "mic_data_extractio_arm_1") %>%
   rename_with(~ gsub("mic50_", "", .x, fixed = TRUE)) %>%
   pivot_longer(cols = who_1:count_7,
@@ -90,18 +88,18 @@ geospat_pivot = rbind(ready, raw)
 rm(raw)
 rm(ready)
 
-dd_sr <- geospat_pivot %>% 
-  # filter(redcap_repeat_instrument == "sr_data_extraction") %>% 
-  separate_rows(country, sep = ",") %>% 
-  separate_rows(country, sep = "/") %>% 
+dd_sr <- geospat_pivot %>%
+  # filter(redcap_repeat_instrument == "sr_data_extraction") %>%
+  separate_rows(country, sep = ",") %>%
+  separate_rows(country, sep = "/") %>%
   mutate(
     country = str_trim(country),
     country = str_replace_all(country, "\\(", ""),
-    country = str_replace_all(country, "\\)", "")) 
+    country = str_replace_all(country, "\\)", ""))
 
 dd_sr[which(dd_sr$country == "USA"), "country"] = "United States of America (the)"
 dd_sr[which(dd_sr$country == "'North America'"), "country"] = "Multiple"
-dd_sr <- dd_sr[-which(dd_sr$country == "breakdown not reported"), ] 
+dd_sr <- dd_sr[-which(dd_sr$country == "breakdown not reported"), ]
 dd_sr[which(dd_sr$country == "Columbia"), "country"] = "Colombia"
 dd_sr[which(dd_sr$country == "Czech Rep"), "country"] = "Czechia"
 dd_sr[which(dd_sr$country == "Ethopia"), "country"] = "Ethiopia"
@@ -124,6 +122,6 @@ dd_sr[which(dd_sr$country == "Turkey"), "country"] = "Turkiye"
 dd_sr[which(dd_sr$country == "Iran"), "country"] = "Iran (Islamic Republic of)"
 dd_sr[which(dd_sr$country == "Netherlands"), "country"] = "Netherlands (Kingdom of the)"
 
-dd_sr = dd_sr %>% 
+dd_sr = dd_sr %>%
   left_join(world_income, by = c("country" = "country"))
 
