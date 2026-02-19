@@ -1,42 +1,40 @@
-setwd("~/R/Strep A")
 source("code/preamble.R")
 
-gas_country = gas_sr %>% 
-  uncount(count) %>% 
+gas_country = gas_sr %>%
+  uncount(count) %>%
   group_by(alpha_3_code, mean_grp) %>%
   summarise(mean_mic = mean(mic90nos, na.rm = TRUE),
             sd_mic = sd(mic90nos, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
             mean_hi = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
-            mean_lo = mean_mic + qt(0.975, n - 1)*(sd_mic/sqrt(n))) %>% 
+            mean_lo = mean_mic + qt(0.975, n - 1)*(sd_mic/sqrt(n))) %>%
   mutate(change = mean_mic - lag(mean_mic),
-         # se_change = (sd_mic/sqrt(n)) + (lag(sd_mic)/ sqrt(lag(n))),
          se_change = sqrt(((lag(sd_mic)^2)/ lag(n)) + ((sd_mic^2)/ n)),
          ci_lo_change = change - qt(0.975, n + lag(n) -1)*se_change,
          ci_hi_change = change + qt(0.975, n + lag(n) -1)*se_change,
-         percent_change = round((mean_mic - lag(mean_mic))/lag(mean_mic) * 100, 0)) %>% 
-  ungroup() %>% 
-  group_by(alpha_3_code) %>% 
-  mutate(grpid = cur_group_id(), 
+         percent_change = round((mean_mic - lag(mean_mic))/lag(mean_mic) * 100, 0)) %>%
+  ungroup() %>%
+  group_by(alpha_3_code) %>%
+  mutate(grpid = cur_group_id(),
          facet_grp = if_else(grpid <= 22, "1", "2"),
          mean_grp = as.factor(mean_grp),
          country_n = sum(n),
          prop = n/country_n,
-         alpha_3_code = as_factor(alpha_3_code)) %>% 
+         alpha_3_code = as_factor(alpha_3_code)) %>%
   ungroup()
 
-gas_global = gas_sr %>% 
-  uncount(count) %>% 
+gas_global = gas_sr %>%
+  uncount(count) %>%
   mutate(global_mean = mean(isolate_yr, na.rm = TRUE),
-         mean_grp = as.factor(if_else(isolate_yr <= global_mean, 1, 2))) %>% 
-  group_by(mean_grp) %>% 
+         mean_grp = as.factor(if_else(isolate_yr <= global_mean, 1, 2))) %>%
+  group_by(mean_grp) %>%
   summarise(mean_mic = mean(mic90nos, na.rm = TRUE),
             sd_mic = sd(mic90nos, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
             mean_hi = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
-            mean_lo = mean_mic + qt(0.975, n - 1)*(sd_mic/sqrt(n))) %>% 
+            mean_lo = mean_mic + qt(0.975, n - 1)*(sd_mic/sqrt(n))) %>%
   mutate(change = mean_mic - lag(mean_mic),
          se_change = sqrt(((lag(sd_mic)^2)/ lag(n)) + ((sd_mic^2)/ n)),
          # se_change = () + (lag(sd_mic)/ sqrt(lag(n))),
@@ -44,32 +42,32 @@ gas_global = gas_sr %>%
          ci_hi_change = change + qt(0.975, n + lag(n) -1)*se_change,
          percent_change = round((mean_mic - lag(mean_mic))/lag(mean_mic) * 100,0),
          global_n = sum(n),
-         prop = n/global_n) %>% 
-  ungroup() %>% 
-  mutate(grpid = max(gas_country$grpid) + 1, 
+         prop = n/global_n) %>%
+  ungroup() %>%
+  mutate(grpid = max(gas_country$grpid) + 1,
          facet_grp = as.character(2),
          alpha_3_code = as_factor("GLOBAL"))
 
-gas_mean = bind_rows(gas_country, gas_global) %>% 
-  mutate(alpha_3_code = if_else(is.na(alpha_3_code), "UNCLASSIFIED", alpha_3_code)) %>% 
-  left_join(who_regions, by = c("alpha_3_code" = "code")) %>% 
+gas_mean = bind_rows(gas_country, gas_global) %>%
+  mutate(alpha_3_code = if_else(is.na(alpha_3_code), "UNCLASSIFIED", alpha_3_code)) %>%
+  left_join(who_regions, by = c("alpha_3_code" = "code")) %>%
   mutate(alpha_3_code = factor(
-    alpha_3_code, levels = c("SEN", "ZAF", "ARG", "BRA", "CAN", "MEX", "USA", 
-                             "EGY", "MAR", "AUT", "BEL", "CHE", "DEU", "DNK", 
-                             "ESP", "FIN", "FRA", "GBR", "GRC", "HRV", "HUN", 
+    alpha_3_code, levels = c("SEN", "ZAF", "ARG", "BRA", "CAN", "MEX", "USA",
+                             "EGY", "MAR", "AUT", "BEL", "CHE", "DEU", "DNK",
+                             "ESP", "FIN", "FRA", "GBR", "GRC", "HRV", "HUN",
                              "ISL", "ISR", "ITA", "NLD", "NOR", "POL", "PRT",
                              "SRB", "SVK", "SVN", "SWE", "TUR", "IDN", "IND", "AUS",
-                             "CHN", "JPN", "KOR", "SGP", "HKG", "TWN", 
+                             "CHN", "JPN", "KOR", "SGP", "HKG", "TWN",
                              "UNCLASSIFIED", "GLOBAL")),
     entity = factor(entity, levels = c("Senegal", "South Africa",
-                                       "Argentina", "Brazil", "Canada", "Mexico", "United States", 
-                                       "Egypt", "Morocco", 
-                                       "Austria", "Belgium", "Denmark", 
-                                        "Finland", "France", "Germany", "Greece", "Croatia", "Hungary", 
+                                       "Argentina", "Brazil", "Canada", "Mexico", "United States",
+                                       "Egypt", "Morocco",
+                                       "Austria", "Belgium", "Denmark",
+                                        "Finland", "France", "Germany", "Greece", "Croatia", "Hungary",
                                        "Iceland", "Israel", "Italy", "Netherlands", "Norway", "Poland", "Portugal",
-                                       "Serbia", "Slovakia", "Slovenia","Spain", "Sweden", "Switzerland", "Turkey", "United Kingdom", 
+                                       "Serbia", "Slovakia", "Slovenia","Spain", "Sweden", "Switzerland", "Turkey", "United Kingdom",
                                        "Indonesia", "India", "Australia",
-                                       "China", "Japan", "South Korea", "Singapore", 
+                                       "China", "Japan", "South Korea", "Singapore",
                                        "Hong Kong", "Taiwan", "UNCLASSIFIED", "GLOBAL")),
     who_region = if_else(is.na(who_region), "Unclassifed", who_region))
 
@@ -92,10 +90,10 @@ plot_bubble = ggplot(gas_mean,
   #            size = 5.8, alpha = 1, color = "white") +
   # geom_point(data = gas_mean %>% filter(mean_grp == 2),
   #            size = 5, alpha = 0.75, show.legend = FALSE) +
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
+  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#174F4D",
                 data = gas_mean %>% filter(mean_grp == 1))+
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
+  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#422D4E",
                 data = gas_mean %>% filter(mean_grp == 2))+
   scale_color_viridis_d(begin = 0.5, end = 0.05)+
@@ -135,9 +133,9 @@ plot_regions = ggplot(gas_mean,
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   geom_text(aes(label = who_region, x = 1), colour = "white")+
-  geom_text(aes(label = who_region, x = 1), data = gas_mean %>% 
-              group_by(who_region) %>% 
-              slice(1) %>% 
+  geom_text(aes(label = who_region, x = 1), data = gas_mean %>%
+              group_by(who_region) %>%
+              slice(1) %>%
               ungroup(), hjust = 1, colour = "#5D5D5D", fontface  = "bold")+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
@@ -178,15 +176,14 @@ ggsave("mean_mic_forest_mean.tiff", path = "figures/", width = 17.5, height = 9.
 
 
 #===============================================================================
-
-paired_countries = (gas_mean %>% 
-  count(alpha_3_code) %>% 
+paired_countries = (gas_mean %>%
+  count(alpha_3_code) %>%
   filter(n == 2))$alpha_3_code
 
-gas_paired = gas_mean %>% 
+gas_paired = gas_mean %>%
   filter(alpha_3_code %in% paired_countries)
 
-write_csv(gas_paired, "data/cleaned/forest_data.csv")
+write_csv(gas_paired, "data/output/forest_data.csv")
 
 plot_bubble = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                      aes(x = mean_mic,
@@ -205,22 +202,22 @@ plot_bubble = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
   theme_minimal() +
   # geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
   geom_point(data = gas_paired%>% filter(alpha_3_code != "GLOBAL"), mapping = aes(size = n),
-             alpha = 0.65, show.legend = TRUE) +        ## size = 5, 
+             alpha = 0.65, show.legend = TRUE) +        ## size = 5,
   scale_size_continuous(range = c(4,10)) +   ##, transform = "log10"
   # geom_point(data = gas_paired %>% filter(med_grp == 2),
   #            size = 5.8, alpha = 1, color = "white") +
   # geom_point(data = gas_paired %>% filter(med_grp == 2),
   #            size = 5, alpha = 0.75, show.legend = FALSE) +
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
+  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
                 data = gas_paired %>% filter(mean_grp == 1,
                                              alpha_3_code != "GLOBAL"))+
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
+  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#422D4E", linewidth = 0.8,
                 data = gas_paired %>% filter(mean_grp == 2,
                                              alpha_3_code != "GLOBAL"))+
-  scale_color_viridis_d(begin = 0.5, end = 0.05, 
-                        labels = c("Before and on mean year", 
+  scale_color_viridis_d(begin = 0.5, end = 0.05,
+                        labels = c("Before and on mean year",
                                    "After mean year"))+
   theme(strip.background = element_blank(),
         strip.text = element_blank(),
@@ -234,12 +231,12 @@ plot_bubble = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                      limits = c(-0.017,0.13))+
   scale_y_discrete(expand = c(0,2))+
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 1, 
+            data = gas_paired %>% filter(mean_grp == 1,
                                          alpha_3_code != "GLOBAL"), show.legend = FALSE) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
             data = gas_paired %>% filter(mean_grp == 2,
                                          alpha_3_code != "GLOBAL"), show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31), 
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31),
             show.legend = FALSE, colour = "#5D5D5D") +
   # geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
   #           show.legend = FALSE, colour = "#5D5D5D") +
@@ -275,10 +272,10 @@ plot_regions = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   geom_text(aes(label = who_region, x = 1), colour = "white")+
-  geom_text(aes(label = who_region, x = 1), data = gas_paired %>% 
-              group_by(who_region) %>% 
-              slice(1) %>% 
-              ungroup() %>% 
+  geom_text(aes(label = who_region, x = 1), data = gas_paired %>%
+              group_by(who_region) %>%
+              slice(1) %>%
+              ungroup() %>%
               filter(alpha_3_code != "GLOBAL"), hjust = 1, colour = "#5D5D5D", fontface  = "bold")+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
@@ -319,110 +316,4 @@ layout <- c(
 
 plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
-ggsave("mean_mic_forest_pairs_mean_3.tiff", path = "figures/", width = 17, height = 9.5)
-
-
-
-
-
-
-
-
-###############################################################################
-
-
-plot_bubble = ggplot(gas_paired,
-                     aes(x = mean_mic,
-                         y = fct_rev(entity),
-                         group = mean_grp,
-                         colour = mean_grp)) +
-  geom_line(aes(group = entity), colour = "gray", linewidth = 1.1, alpha = 0.65) +
-  theme_minimal() +
-  geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
-  geom_point(data = gas_paired, mapping = aes(size = prop),
-             alpha = 0.65, show.legend = F) +        ## size = 5, 
-  scale_size_continuous(range = c(2,8)) +
-  # geom_point(data = gas_paired %>% filter(med_grp == 2),
-  #            size = 5.8, alpha = 1, color = "white") +
-  # geom_point(data = gas_paired %>% filter(med_grp == 2),
-  #            size = 5, alpha = 0.75, show.legend = FALSE) +
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
-                show.legend = FALSE, colour = "#174F4D", linewidth = 1,
-                data = gas_paired %>% filter(mean_grp == 1))+
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
-                show.legend = FALSE, colour = "#422D4E", linewidth = 1,
-                data = gas_paired %>% filter(mean_grp == 2))+
-  scale_color_viridis_d(begin = 0.5, end = 0.05)+
-  theme(strip.background = element_blank(),
-        strip.text = element_blank(),
-        plot.title = element_markdown(lineheight = 1.1),
-        # legend.position = "top",
-        # axis.text.x = element_text(angle = 30, hjust = .9),
-        axis.text.y = element_blank(),
-        panel.grid.minor.x = element_blank()) +
-  scale_x_continuous(breaks = c(0.008,0.016,0.032, 0.048, 0.064, 0.12),
-                     limits = c(-0.017,0.13))+
-  scale_y_discrete(expand = c(0,4))+
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 1), show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 2), show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.0095, y= 33.5), show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
-            show.legend = FALSE, colour = "#5D5D5D") +
-  geom_text(mapping = aes(label = "After \nmean year", x = -0.003, y= 32.25), show.legend = FALSE,
-            colour = "#5D5D5D") +
-  labs(x = "Mean MIC",
-       y = "")
-
-plot_bubble = ggplot(gas_paired %>% filter(entity != "GLOBAL"),
-                     aes(x = mean_mic,
-                         y = fct_rev(entity),
-                         group = mean_grp,
-                         colour = mean_grp)) +
-  geom_line(aes(group = entity), colour = "gray", linewidth = 1.1, alpha = 0.65) +
-  theme_minimal() +
-  #geom_hline(yintercept = 1.5, linetype = "dashed", colour = "gray", linewidth = 1.2) +
-  geom_point(data = gas_paired%>% filter(entity != "GLOBAL"), mapping = aes(size = n),
-             alpha = 0.65, show.legend = TRUE) +        ## size = 5, 
-  scale_size_continuous(range = c(6,14)) +   ##, transform = "log10"
-  # geom_point(data = gas_paired %>% filter(med_grp == 2),
-  #            size = 5.8, alpha = 1, color = "white") +
-  # geom_point(data = gas_paired %>% filter(med_grp == 2),
-  #            size = 5, alpha = 0.75, show.legend = FALSE) +
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
-                show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
-                data = gas_paired %>% filter(mean_grp == 1)%>% filter(entity != "GLOBAL"))+
-  geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7, 
-                show.legend = FALSE, colour = "#422D4E", linewidth = 0.8,
-                data = gas_paired %>% filter(mean_grp == 2)%>% filter(entity != "GLOBAL"))+
-  scale_color_viridis_d(begin = 0.5, end = 0.05, 
-                        labels = c("Before and on mean year", 
-                                   "After mean year"))+
-  theme(strip.background = element_blank(),
-        strip.text = element_blank(),
-        plot.title = element_markdown(lineheight = 1.1),
-        legend.position = "top",
-        # axis.text.x = element_text(angle = 30, hjust = .9),
-        axis.text.y = element_blank(),
-        panel.grid.minor.x = element_blank()) +
-  guides(color = guide_legend(override.aes = list(size = 6))) +
-  scale_x_continuous(breaks = c(0.008,0.016,0.032, 0.048, 0.064, 0.12),
-                     limits = c(-0.017,0.13))+
-  scale_y_discrete(expand = c(0,2))+
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 1)%>% filter(entity != "GLOBAL"), show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
-            data = gas_paired %>% filter(mean_grp == 2)%>% filter(entity != "GLOBAL"), show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.0095, y= 32.5), show.legend = FALSE) +
-  # geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
-  #           show.legend = FALSE, colour = "#5D5D5D") +
-  # geom_text(mapping = aes(label = "After \nmean year", x = -0.003, y= 32.25), show.legend = FALSE,
-  #           colour = "#5D5D5D") +
-  labs(x = "Mean MIC",
-       y = "",
-       size = "Proportion of Samples",
-       colour = "")+ 
-  geom_vline(aes(xintercept = 0.02343562), colour = "#174F4D", lwd = 1.5, linetype = "dashed")+
-  geom_vline(aes(xintercept = 0.02142750), colour = "#422D4E", lwd = 1.5, linetype = "dashed")
-
+ggsave("mean_mic_forest_pairs_mean.tiff", path = "figures/", width = 17, height = 9.5)
