@@ -339,7 +339,7 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
   gas_paired = gas_mean %>%
     filter(alpha_3_code %in% paired_countries)
 
-  write_csv(gas_paired, "data/output/forest_data_nos_raw.csv")
+  write_csv(gas_paired, "data/output/forest_data_nos90ed_with_90s.csv")
 
   plot_bubble = ggplot(gas_paired %>% filter(alpha_3_code != "GLOBAL"),
                        aes(x = mean_mic,
@@ -392,7 +392,7 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
     geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
               data = gas_paired %>% filter(mean_grp == 2,
                                            alpha_3_code != "GLOBAL"), show.legend = FALSE) +
-    geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 15),
+    geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 26.5),
               show.legend = FALSE, colour = "#5D5D5D") +
     # geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
     #           show.legend = FALSE, colour = "#5D5D5D") +
@@ -400,9 +400,9 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
     #           colour = "#5D5D5D") +
 
     annotate("text", label = "Global before and \non mean year",
-             x = 0.004, y = 15.5, colour = "#6EB7B4") +
+             x = 0.024, y = 27, colour = "#6EB7B4") +
     annotate("text", label = "Global after \nmean year",
-             x = 0.022, y = 15.5, colour = "#88669C") +
+             x = 0.006, y = 27, colour = "#88669C") +
     # geom_curve(aes(x = 0.03, xend = 0.024, y = 31.3, yend = 31.5), colour = "#0E131F",
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = -0.5)+
     # geom_curve(aes(x = 0.014, xend = 0.0204, y = 31.3, yend = 31.5), colour = "#0E131F",
@@ -450,8 +450,8 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
           axis.ticks = element_blank(),
           axis.text.x = element_blank())+
     scale_y_discrete(expand = c(0,2))+
-    annotate("text", label = "Difference in \nmean MIC", x = 1, y = 15.5, colour = "#5D5D5D") +
-    annotate("text", label = "CI of \ndifference", x = 5.2, y = 15.5, colour = "#5D5D5D") +
+    annotate("text", label = "Difference in \nmean MIC", x = 1, y = 26.5, colour = "#5D5D5D") +
+    annotate("text", label = "CI of \ndifference", x = 5.2, y = 26.5, colour = "#5D5D5D") +
     # geom_text(aes(label = "Difference in \nmeans", x = 1, y = 27), colour = "#5D5D5D")+
     # geom_text(aes(label = "CI of \ndifference", x = 5.2, y = 27), colour = "#5D5D5D")+
     geom_text(aes(label = round(change,3), x = 1), colour = "#5D5D5D")+
@@ -468,7 +468,7 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
 
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
-  ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, height = 9.5)
+  ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width = 17, height = 9.5)
 }
 #===============================================================================
 # nos raw + 90s
