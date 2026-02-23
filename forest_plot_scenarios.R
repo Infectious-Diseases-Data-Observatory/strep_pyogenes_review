@@ -7,6 +7,8 @@ library(viridisLite)
 library(cowplot)
 library(scales)
 
+source("clean_gas_data.R")
+
 who_regions = read_csv("data/who-regions.csv", show_col_types = FALSE, guess_max = Inf) %>%
   clean_names()
 
@@ -28,9 +30,10 @@ gas_nos_raw = read_excel("data/GAS_SR_Raw_50_90_NOS_formatted_20251106.xlsx") %>
   clean_gas_data()
 
 # write.csv(gas_90, "data/gas_90.csv", row.names = FALSE)
-# write.csv(gas_nos, "data/gas_nos.csv", row.names = FALSE)
+# write.csv(gas_nos_nintied, "data/gas_nos_nintied.csv", row.names = FALSE)
+# write.csv(gas_nos_raw, "data/gas_nos_raw.csv", row.names = FALSE)
 
-gas_90_combined = bind_rows(gas_90, gas_nos)
+gas_90_combined = bind_rows(gas_90, gas_nos_nintied)
 
 gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
   gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"micnos_q90"]
@@ -49,8 +52,8 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
               mean_lo = mean_mic + qt(0.975, n - 1)*(sd_mic/sqrt(n))) %>%
     mutate(change = mean_mic - lag(mean_mic),
            se_change = sqrt(((lag(sd_mic)^2)/ lag(n)) + ((sd_mic^2)/ n)),
-           ci_lo_change = change - qt(0.975, n + lag(n) -1)*se_change,
-           ci_hi_change = change + qt(0.975, n + lag(n) -1)*se_change,
+           ci_lo_change = change - qt(0.975, n + lag(n) - 1)*se_change,
+           ci_hi_change = change + qt(0.975, n + lag(n) - 1)*se_change,
            percent_change = round((mean_mic - lag(mean_mic))/lag(mean_mic) * 100, 0)) %>%
     ungroup() %>%
     group_by(alpha_3_code) %>%
@@ -250,7 +253,7 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
 
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
-  ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, height = 9.5)
+  # ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, height = 9.5)
 
 }
 #===============================================================================
@@ -468,7 +471,7 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
 
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
-  ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width = 17, height = 9.5)
+  # ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width = 17, height = 9.5)
 }
 #===============================================================================
 # nos raw + 90s
