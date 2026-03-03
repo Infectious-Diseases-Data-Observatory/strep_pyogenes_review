@@ -19,17 +19,38 @@ gas_nos_nintied = read_csv("data/GAS_SR_Raw_50_90_NOS_20260228.csv", show_col_ty
 
 gas_nos_raw = read_csv("data/GAS_SR_Raw_50_90_NOS_20260228.csv", show_col_types = FALSE) %>%
   filter(!is.na(micnos_1))%>%
-  clean_gas_data()
+  clean_gas_data() %>%
+  left_join(world_income, by = c("country")) %>%
+  mutate(country = str_to_title(country)) %>%
+  group_by(alpha_3_code) %>%
+  mutate(median_year = median(isolate_yr, na.rm = TRUE),
+         med_grp = if_else(isolate_yr <= median_year, 1, 2),
+         midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
+         midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
+         mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
+         mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
+  ungroup()
 
 write.csv(gas_90, "data/gas_90.csv", row.names = FALSE)
 write.csv(gas_nos_nintied, "data/gas_nos_nintied.csv", row.names = FALSE)
 write.csv(gas_nos_raw, "data/gas_nos_raw.csv", row.names = FALSE)
 
-gas_90_combined = bind_rows(gas_90, gas_nos_nintied)
+gas_90_combined = bind_rows(gas_90, gas_nos_nintied)%>%
+  left_join(world_income, by = c("country")) %>%
+  mutate(country = str_to_title(country)) %>%
+  group_by(alpha_3_code) %>%
+  mutate(median_year = median(isolate_yr, na.rm = TRUE),
+         med_grp = if_else(isolate_yr <= median_year, 1, 2),
+         midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
+         midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
+         mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
+         mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
+  ungroup()
 
 gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
   gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"micnos_q90"]
 
+write.csv(gas_90_combined, "data/gas_90s combined.csv", row.names = FALSE)
 #===============================================================================
 # nos raw only
 {
@@ -179,14 +200,14 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
     annotate("text", label = "Global before and \non mean year",
              x = 0.004, y = 15.5, colour = "#6EB7B4") +
     annotate("text", label = "Global after \nmean year",
-             x = 0.022, y = 15.5, colour = "#88669C") +
+             x = 0.025, y = 15.5, colour = "#88669C") +
     # geom_curve(aes(x = 0.03, xend = 0.024, y = 31.3, yend = 31.5), colour = "#0E131F",
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = -0.5)+
     # geom_curve(aes(x = 0.014, xend = 0.0204, y = 31.3, yend = 31.5), colour = "#0E131F",
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = 0.5)+
     labs(x = "Mean MIC",
          y = "",
-         size = "Proportion of Samples",
+         size = "Number of Samples",
          colour = "")
   # plot_bubble
 
@@ -246,15 +267,15 @@ gas_90_combined[which(is.na(gas_90_combined$mic90_1)),"mic90_1"] =
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 
 }
-ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, height = 9.5)
+ggsave("mean_mic_forest_pairs_mean_nos_raw.tif", path = "figs/", width = 17, height = 9.5)
 #===============================================================================
 # nos 90'ed + 90s
 {
   gas_country = gas_90_combined %>%
     uncount(count) %>%
     group_by(alpha_3_code, mean_grp) %>%
-    summarise(mean_mic = mean(micnos_q90, na.rm = TRUE),
-              sd_mic = sd(micnos_q90, na.rm = TRUE),
+    summarise(mean_mic = mean(mic90_1, na.rm = TRUE),
+              sd_mic = sd(mic90_1, na.rm = TRUE),
               n = n(),
               n_studies = length(unique(record_id)),
               mean_hi = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
@@ -279,8 +300,8 @@ ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, he
     mutate(global_mean = mean(isolate_yr, na.rm = TRUE),
            mean_grp = as.factor(if_else(isolate_yr <= global_mean, 1, 2))) %>%
     group_by(mean_grp) %>%
-    summarise(mean_mic = mean(micnos_q90, na.rm = TRUE),
-              sd_mic = sd(micnos_q90, na.rm = TRUE),
+    summarise(mean_mic = mean(mic90_1, na.rm = TRUE),
+              sd_mic = sd(mic90_1, na.rm = TRUE),
               n = n(),
               n_studies = length(unique(record_id)),
               mean_hi = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
@@ -386,7 +407,7 @@ ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, he
     geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000), hjust = 1,
               data = gas_paired %>% filter(mean_grp == 2,
                                            alpha_3_code != "GLOBAL"), show.legend = FALSE) +
-    geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 26.5),
+    geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31),
               show.legend = FALSE, colour = "#5D5D5D") +
     # geom_text(mapping = aes(label = "Before and on\n mean year", x = -0.016, y= 32.25),
     #           show.legend = FALSE, colour = "#5D5D5D") +
@@ -394,16 +415,16 @@ ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, he
     #           colour = "#5D5D5D") +
 
     annotate("text", label = "Global before and \non mean year",
-             x = 0.024, y = 27, colour = "#6EB7B4") +
+             x = 0.032, y = 31.3, colour = "#6EB7B4") +
     annotate("text", label = "Global after \nmean year",
-             x = 0.006, y = 27, colour = "#88669C") +
+             x = 0.016, y = 31.3, colour = "#88669C") +
     # geom_curve(aes(x = 0.03, xend = 0.024, y = 31.3, yend = 31.5), colour = "#0E131F",
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = -0.5)+
     # geom_curve(aes(x = 0.014, xend = 0.0204, y = 31.3, yend = 31.5), colour = "#0E131F",
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = 0.5)+
     labs(x = "Mean MIC",
          y = "",
-         size = "Proportion of Samples",
+         size = "Number of Samples",
          colour = "")
   # plot_bubble
 
@@ -444,8 +465,8 @@ ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, he
           axis.ticks = element_blank(),
           axis.text.x = element_blank())+
     scale_y_discrete(expand = c(0,2))+
-    annotate("text", label = "Difference in \nmean MIC", x = 1, y = 26.5, colour = "#5D5D5D") +
-    annotate("text", label = "CI of \ndifference", x = 5.2, y = 26.5, colour = "#5D5D5D") +
+    annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
+    annotate("text", label = "CI of \ndifference", x = 5.2, y = 31.25, colour = "#5D5D5D") +
     # geom_text(aes(label = "Difference in \nmeans", x = 1, y = 27), colour = "#5D5D5D")+
     # geom_text(aes(label = "CI of \ndifference", x = 5.2, y = 27), colour = "#5D5D5D")+
     geom_text(aes(label = round(change,3), x = 1), colour = "#5D5D5D")+
@@ -463,7 +484,7 @@ ggsave("mean_mic_forest_pairs_mean_nos_raw.tiff", path = "figs/", width = 17, he
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 }
 
-ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width = 17, height = 9.5)
+ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tif", path = "figs/", width = 17, height = 9.5)
 #===============================================================================
 # nos raw + 90s
 {
@@ -620,7 +641,7 @@ ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width
     #            arrow = arrow(length = unit(0.25,"cm"), type = "closed"), curvature = 0.5)+
     labs(x = "Mean MIC",
          y = "",
-         size = "Proportion of Samples",
+         size = "Number of Samples",
          colour = "")
   plot_bubble
 
@@ -683,4 +704,4 @@ ggsave("mean_mic_forest_pairs_mean_nos90ed_with_90s.tiff", path = "figs/", width
 
   plot_regions + plot_bubble + plot_diffs + patchwork::plot_layout(design = layout)
 }
-ggsave("mean_mic_forest_pairs_mean_nos_raw_with_90s.tiff", path = "figures/", width = 17, height = 9.5)
+ggsave("mean_mic_forest_pairs_mean_nos_raw_with_90s.tif", path = "figs/", width = 17, height = 9.5)

@@ -13,17 +13,17 @@ clean_gas_data = function(data){
   data[which(data$country == "Turkey"), "country"] = "Turkiye"
   data[which(data$country == "Netherlands"), "country"] = "Netherlands (Kingdom of the)"
 
-  data_join = data %>%
-    left_join(world_income, by = c("country")) %>%
-    mutate(country = str_to_title(country)) %>%
-    group_by(alpha_3_code) %>%
-    mutate(median_year = median(isolate_yr, na.rm = TRUE),
-           med_grp = if_else(isolate_yr <= median_year, 1, 2),
-           midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
-           midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
-           mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
-           mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
-    ungroup()
+  # data_join = data %>%
+  #   left_join(world_income, by = c("country")) %>%
+  #   mutate(country = str_to_title(country)) %>%
+  #   group_by(alpha_3_code) %>%
+  #   mutate(median_year = median(isolate_yr, na.rm = TRUE),
+  #          med_grp = if_else(isolate_yr <= median_year, 1, 2),
+  #          midpoint_year = (max(isolate_yr, na.rm = TRUE) - min(isolate_yr, na.rm = TRUE))/2 + min(isolate_yr, na.rm = TRUE),
+  #          midpoint_grp = if_else(isolate_yr <= midpoint_year, 1, 2),
+  #          mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
+  #          mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
+  #   ungroup()
 
-  return(data_join)
+  return(data)
 }
