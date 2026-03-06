@@ -1,4 +1,4 @@
-source("code/preamble.R")
+source("mic_data_load.R")
 
 dd_df = dd_sr %>%
   group_by(alpha_3_code) %>%
@@ -41,6 +41,6 @@ dd_plot = ggplot(world_map %>%
 
 dd_plot  ## 1 row removed in geom_point - 'multiple'
 
-ggsave("map_all.tiff", path = "figures/", width = 12.1, height = 5.72)
+ggsave("isolates_map.tif", path = "figs/", width = 12.1, height = 5.72)
 
 
