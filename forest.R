@@ -9,7 +9,7 @@ country_data = gas_data %>%
   ungroup() %>%
   uncount(count) %>%
   group_by(alpha_3_code, mean_grp) %>%                               # mean_grp, mean year
-  summarise(mean_mic = mean(mic90nos, na.rm = TRUE),
+  summarise(mean_mic = mean(log2(mic90nos), na.rm = TRUE),
             sd_mic = sd(mic90nos, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
@@ -41,7 +41,7 @@ global_data = gas_data %>%
          mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
   uncount(count) %>%
   group_by(mean_grp) %>%                                                        # mean_grp
-  summarise(mean_mic = mean(mic90nos, na.rm = TRUE),
+  summarise(mean_mic = mean(log2(mic90nos), na.rm = TRUE),
             sd_mic = sd(mic90nos, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
@@ -90,7 +90,7 @@ paired_countries = (forest_data %>%
 forest_data_pairs = forest_data %>%
   filter(alpha_3_code %in% paired_countries)
 
-write_csv(forest_data_pairs, "data/output/forest_data_granular.csv")
+write_csv(forest_data_pairs, "data/output/forest_data_granular_logged.csv")
 
 plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
        aes(x = mean_mic,
@@ -132,27 +132,28 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         axis.text.y = element_blank(),
         panel.grid.minor.x = element_blank()) +
   guides(color = guide_legend(override.aes = list(size = 10))) +
-  scale_x_continuous(breaks = c(0.008,0.016,0.032, 0.048, 0.064, 0.12),
-                     limits = c(-0.017,0.13))+
+  scale_x_continuous(breaks = c(-8:-3),
+                     limits = c(-10,-2))+
   scale_y_discrete(expand = c(0,2))+
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012),
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9.5),
             data = forest_data_pairs %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000),
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.5),
             data = forest_data_pairs %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31),
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -9, y= 31),
             show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
   annotate("text", label = "Global before and \non mean year (1999)",                  # mean year
-           x = 0.012, y = 31.4, colour = "#6EB7B4", size = 3) +
+           x = -6.3, y = 31.4, colour = "#6EB7B4", size = 3) +
   annotate("text", label = "Global after \nmean year (1999)",                          # mean year
-           x = 0.030, y = 31.4, colour = "#88669C", size = 3) +
-  labs(x = "Mean MIC",
+           x = -5.3, y = 31.4, colour = "#88669C", size = 3) +
+  labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
        colour = "")
+plot_points
 
 plot_regions = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
        aes(y = fct_rev(entity)))+
@@ -188,8 +189,8 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference", x = 5.2, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Difference in \nmean MIC (log2)", x = 1, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "CI of \ndifference (log2)", x = 5.2, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "Mean year", x = 8.2, y = 31.25, colour = "#5D5D5D") +  # mean year
   geom_text(aes(label = round(change_mean,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo, 3), ", ", round(ci_change_hi, 3), "]"), x = 6.5),
@@ -207,11 +208,10 @@ layout <- c(
 
 plot_regions + plot_points + plot_diffs + patchwork::plot_layout(design = layout)
 
-ggsave("forest_plot_granular.tif", path = "figs/", width = 17, height = 9.5)
-
+ggsave("forest_plot_granular_logged.tif", path = "figs/", width = 17, height = 9.5)
 
 #===============================================================================
-country_mic_agg = gas_mic_agg %>%
+country_mic_agg_log = gas_mic_agg %>%
   group_by(alpha_3_code) %>%
   mutate(median_year = floor(median(isolate_yr, na.rm = TRUE)),
          median_grp = as.factor(if_else(isolate_yr <= median_year, 1, 2)),
@@ -219,9 +219,10 @@ country_mic_agg = gas_mic_agg %>%
          mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
   ungroup() %>%
   uncount(count) %>%
+  mutate(log_mic_90_agg = log2(mic_90_agg)) %>%
   group_by(alpha_3_code, mean_grp) %>%                               # mean_grp, mean year
-  summarise(mean_mic = mean(mic_90_agg, na.rm = TRUE),
-            sd_mic = sd(mic_90_agg, na.rm = TRUE),
+  summarise(mean_mic = mean(log_mic_90_agg, na.rm = TRUE),
+            sd_mic = sd(log_mic_90_agg, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
             mean_lo = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
@@ -245,15 +246,16 @@ country_mic_agg = gas_mic_agg %>%
               ungroup(),
             by = "alpha_3_code")
 
-global_mic_agg = gas_mic_agg %>%
+global_mic_agg_log = gas_mic_agg %>%
   mutate(median_year = floor(median(isolate_yr, na.rm = TRUE)),
          median_grp = as.factor(if_else(isolate_yr <= median_year, 1, 2)),
          mean_year = floor(mean(isolate_yr, na.rm = TRUE)),
          mean_grp = as.factor(if_else(isolate_yr <= mean_year, 1, 2))) %>%
   uncount(count) %>%
+  mutate(log_mic_90_agg = log2(mic_90_agg)) %>%
   group_by(mean_grp) %>%                                                        # mean_grp
-  summarise(mean_mic = mean(mic_90_agg, na.rm = TRUE),
-            sd_mic = sd(mic_90_agg, na.rm = TRUE),
+  summarise(mean_mic = mean(log_mic_90_agg, na.rm = TRUE),
+            sd_mic = sd(log_mic_90_agg, na.rm = TRUE),
             n = n(),
             n_studies = length(unique(record_id)),
             mean_lo = mean_mic - qt(0.975, n - 1)*(sd_mic/sqrt(n)),
@@ -265,7 +267,7 @@ global_mic_agg = gas_mic_agg %>%
   ungroup() %>%
   mutate(alpha_3_code = as.factor("GLOBAL"))
 
-forest_mic_agg = bind_rows(country_mic_agg, global_mic_agg)%>%
+forest_mic_agg_log = bind_rows(country_mic_agg_log, global_mic_agg_log)%>%
   mutate(alpha_3_code = if_else(is.na(alpha_3_code),
                                 "UNCLASSIFIED", alpha_3_code)) %>%
   left_join(who_regions, by = c("alpha_3_code" = "code")) %>%
@@ -289,50 +291,50 @@ forest_mic_agg = bind_rows(country_mic_agg, global_mic_agg)%>%
                                        "Hong Kong", "Taiwan", "UNCLASSIFIED", "GLOBAL")),
     who_region = if_else(is.na(who_region), "Unclassifed", who_region))
 
-forest_mic_agg[which(forest_mic_agg$alpha_3_code == "HKG"), "entity"] = "Hong Kong"
-forest_mic_agg[which(forest_mic_agg$alpha_3_code == "UNCLASSIFIED"), "entity"] = "UNCLASSIFIED"
-forest_mic_agg[which(forest_mic_agg$alpha_3_code == "GLOBAL"), "entity"] = "GLOBAL"
-forest_mic_agg[which(forest_mic_agg$alpha_3_code == "TWN"), "entity"] = "Taiwan"
+forest_mic_agg_log[which(forest_mic_agg_log$alpha_3_code == "HKG"), "entity"] = "Hong Kong"
+forest_mic_agg_log[which(forest_mic_agg_log$alpha_3_code == "UNCLASSIFIED"), "entity"] = "UNCLASSIFIED"
+forest_mic_agg_log[which(forest_mic_agg_log$alpha_3_code == "GLOBAL"), "entity"] = "GLOBAL"
+forest_mic_agg_log[which(forest_mic_agg_log$alpha_3_code == "TWN"), "entity"] = "Taiwan"
 
-paired_countries_mic_agg = (forest_mic_agg %>%
-                      count(alpha_3_code) %>%
-                      filter(n == 2))$alpha_3_code
+paired_countries_mic_agg_log = (forest_mic_agg_log %>%
+                                  count(alpha_3_code) %>%
+                                  filter(n == 2))$alpha_3_code
 
-forest_mic_agg_pairs = forest_mic_agg %>%
-  filter(alpha_3_code %in% paired_countries_mic_agg)
+forest_mic_agg_pairs_log = forest_mic_agg_log %>%
+  filter(alpha_3_code %in% paired_countries_mic_agg_log)
 
-write_csv(forest_mic_agg_pairs, "data/output/forest_data_aggregated.csv")
+write_csv(forest_mic_agg_pairs_log, "data/output/forest_data_aggregated_logged.csv")
 
-plot_points_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL"),
-                     aes(x = mean_mic,
-                         y = fct_rev(entity),
-                         group = mean_grp,                                                    # mean_grp
-                         colour = mean_grp)) +                                                # mean_grp
+plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != "GLOBAL"),
+                             aes(x = mean_mic,
+                                 y = fct_rev(entity),
+                                 group = mean_grp,                                                    # mean_grp
+                                 colour = mean_grp)) +                                                # mean_grp
   # geom_line(aes(group = entity), colour = "gray", linewidth = 1.1, alpha = 0.65) +
   geom_line(aes(group = entity), colour = "blue", linewidth = 1.85, alpha = 0.25,
-            data = forest_mic_agg_pairs %>%
+            data = forest_mic_agg_pairs_log %>%
               filter(change_mean < 0 | mean_grp == 1, alpha_3_code != "GLOBAL"))+   # mean_grp
   geom_line(aes(group = entity), colour = "red", linewidth = 1.85, alpha = 0.25,
-            data = forest_mic_agg_pairs %>%
+            data = forest_mic_agg_pairs_log %>%
               filter(change_mean > 0 | mean_grp == 1, alpha_3_code != "GLOBAL"))+   # mean_grp
-  geom_vline(data = global_mic_agg %>% filter(mean_grp == 1),                      # mean_grp
+  geom_vline(data = global_mic_agg_log %>% filter(mean_grp == 1),                      # mean_grp
              mapping = aes(xintercept = mean_mic),
              colour = "#6EB7B4", linewidth = 1) +
-  geom_vline(data = global_mic_agg %>% filter(mean_grp == 2),                      # mean_grp
+  geom_vline(data = global_mic_agg_log %>% filter(mean_grp == 2),                      # mean_grp
              mapping = aes(xintercept = mean_mic),
              colour = "#88669C", linewidth = 1) +
   theme_minimal() +
-  geom_point(data = forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL"),
+  geom_point(data = forest_mic_agg_pairs_log %>% filter(alpha_3_code != "GLOBAL"),
              mapping = aes(size = n), alpha = 0.65, show.legend = TRUE) +
   scale_size_continuous(range = c(4,10)) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
-                data = forest_mic_agg_pairs %>% filter(mean_grp == 1,              # mean_grp
-                                                    alpha_3_code != "GLOBAL"))+
+                data = forest_mic_agg_pairs_log %>% filter(mean_grp == 1,              # mean_grp
+                                                           alpha_3_code != "GLOBAL"))+
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#422D4E", linewidth = 0.8,
-                data = forest_mic_agg_pairs %>% filter(mean_grp == 2,              # mean_grp
-                                                    alpha_3_code != "GLOBAL"))+
+                data = forest_mic_agg_pairs_log %>% filter(mean_grp == 2,              # mean_grp
+                                                           alpha_3_code != "GLOBAL"))+
   scale_color_viridis_d(begin = 0.5, end = 0.05,
                         labels = c("Before and on mean year",
                                    "After mean year")) +
@@ -343,30 +345,30 @@ plot_points_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL
         axis.text.y = element_blank(),
         panel.grid.minor.x = element_blank()) +
   guides(color = guide_legend(override.aes = list(size = 10))) +
-  scale_x_continuous(breaks = c(0.008,0.016,0.032, 0.048, 0.064, 0.12),
-                     limits = c(-0.017,0.13))+
+  scale_x_continuous(breaks = c(-8:-3),
+                     limits = c(-9.5,-2.5))+
   scale_y_discrete(expand = c(0,2))+
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.012),
-            data = forest_mic_agg_pairs %>%
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9),
+            data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -0.000),
-            data = forest_mic_agg_pairs %>%
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.5),
+            data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -0.01, y= 31),
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -9, y= 31),
             show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
   annotate("text", label = "Global before and \non mean year (1999)",                  # mean year
-           x = 0.012, y = 31.4, colour = "#6EB7B4", size = 3) +
+           x = -5, y = 31.4, colour = "#6EB7B4", size = 3) +
   annotate("text", label = "Global after \nmean year (1999)",                          # mean year
-           x = 0.030, y = 31.4, colour = "#88669C", size = 3) +
-  labs(x = "Mean MIC",
+           x = -6.5, y = 31.4, colour = "#88669C", size = 3) +
+  labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
        colour = "")
 
-plot_regions_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL"),
-                      aes(y = fct_rev(entity)))+
+plot_regions_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != "GLOBAL"),
+                              aes(y = fct_rev(entity)))+
   theme_classic() +
   scale_y_discrete(position = "right", expand = c(0,2))+
   theme(strip.background = element_blank(),
@@ -378,7 +380,7 @@ plot_regions_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBA
         axis.text.x = element_blank())+
   geom_text(aes(label = who_region, x = 1), colour = "white")+
   geom_text(aes(label = who_region, x = 1),
-            data = forest_mic_agg_pairs %>%
+            data = forest_mic_agg_pairs_log %>%
               group_by(who_region) %>%
               slice(1) %>%
               ungroup() %>%
@@ -387,8 +389,8 @@ plot_regions_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBA
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
 
-plot_diffs_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL"),
-                    aes(y = fct_rev(entity)))+
+plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != "GLOBAL"),
+                            aes(y = fct_rev(entity)))+
   theme_classic() +
   theme(strip.background = element_blank(),
         strip.text = element_blank(),
@@ -399,8 +401,8 @@ plot_diffs_agg = ggplot(forest_mic_agg_pairs %>% filter(alpha_3_code != "GLOBAL"
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference", x = 5.2, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Difference in \nmean MIC (log 2)", x = 1, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "CI of \ndifference (log 2)", x = 5.2, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "Mean year", x = 8.2, y = 31.25, colour = "#5D5D5D") +  # mean year
   geom_text(aes(label = round(change_mean,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo, 3), ", ", round(ci_change_hi, 3), "]"), x = 6.5),
@@ -416,6 +418,7 @@ layout <- c(
   patchwork::area(t = 0, l = 16, b = 30, r = 20) # right most plot starts at top of page, begins where middle plot ends (l=9, and middle plot is r=9), goes to bottom of page (b=30), and extends two units wide (r=11)
 )
 
-plot_regions_agg + plot_points_agg + plot_diffs_agg + patchwork::plot_layout(design = layout)
+plot_regions_agg_log + plot_points_agg_log + plot_diffs_agg_log + patchwork::plot_layout(design = layout)
 
-ggsave("forest_plot_aggregated.tif", path = "figs/", width = 17, height = 9.5)
+ggsave("forest_plot_aggregated_logged.tif", path = "figs/", width = 17, height = 9.5)
+
