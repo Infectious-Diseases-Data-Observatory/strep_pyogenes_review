@@ -113,7 +113,8 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
   theme_minimal() +
   geom_point(data = forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
              mapping = aes(size = n), alpha = 0.65, show.legend = TRUE) +
-  scale_size_continuous(range = c(4,10)) +
+  scale_size_continuous(range = c(3,10),
+                        breaks = c(1, 10, 100, 1000, 4000)) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
                 data = forest_data_pairs %>% filter(mean_grp == 1,              # mean_grp
@@ -131,19 +132,20 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         legend.position = "top",
         axis.text.y = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  guides(color = guide_legend(override.aes = list(size = 10))) +
+  guides(color = guide_legend(override.aes = list(size = 10),
+                              order = 1)) +
   scale_x_continuous(breaks = c(-8:-3),
-                     limits = c(-10,-2))+
+                     limits = c(-9.15,-2.75))+
   scale_y_discrete(expand = c(0,2))+
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9.5),
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9),
             data = forest_data_pairs %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.5),
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.25),
             data = forest_data_pairs %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -9, y= 31),
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -8.8, y = 31),
             show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
   annotate("text", label = "Global before and \non mean year (1999)",                  # mean year
            x = -6.3, y = 31.4, colour = "#6EB7B4", size = 3) +
@@ -153,7 +155,6 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
        y = "",
        size = "Number of Samples",
        colour = "")
-plot_points
 
 plot_regions = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
        aes(y = fct_rev(entity)))+
@@ -189,8 +190,8 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC (log2)", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference (log2)", x = 5.2, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Difference in mean\n MIC (log2)", x = 1, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "CI of \ndifference (log2)", x = 4.75, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "Mean year", x = 8.2, y = 31.25, colour = "#5D5D5D") +  # mean year
   geom_text(aes(label = round(change_mean,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo, 3), ", ", round(ci_change_hi, 3), "]"), x = 6.5),
@@ -198,7 +199,7 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
   geom_text(aes(label = mean_year, x = 8.75),                                      # mean year
             hjust = 1, colour = "#5D5D5D")+
   labs(x = "", y = "") +
-  coord_cartesian(xlim = c(0,10))
+  coord_cartesian(xlim = c(-1,10))
 
 layout <- c(
   patchwork::area(t = 1, l = 1, b = 30, r = 2), # left plot, starts at the top of the page (0) and goes 30 units down and 3 units to the right
@@ -326,7 +327,8 @@ plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !=
   theme_minimal() +
   geom_point(data = forest_mic_agg_pairs_log %>% filter(alpha_3_code != "GLOBAL"),
              mapping = aes(size = n), alpha = 0.65, show.legend = TRUE) +
-  scale_size_continuous(range = c(4,10)) +
+  scale_size_continuous(range = c(3,10),
+                        breaks = c(1, 10, 100, 1000, 4000)) +
   geom_errorbar(mapping = aes(xmin = mean_lo, xmax = mean_hi), width = 0.7,
                 show.legend = FALSE, colour = "#174F4D", linewidth = 0.8,
                 data = forest_mic_agg_pairs_log %>% filter(mean_grp == 1,              # mean_grp
@@ -344,24 +346,25 @@ plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !=
         legend.position = "top",
         axis.text.y = element_blank(),
         panel.grid.minor.x = element_blank()) +
-  guides(color = guide_legend(override.aes = list(size = 10))) +
+  guides(color = guide_legend(override.aes = list(size = 10),
+                              order = 1)) +
   scale_x_continuous(breaks = c(-8:-3),
-                     limits = c(-9.5,-2.5))+
+                     limits = c(-9.15,-2.75))+
   scale_y_discrete(expand = c(0,2))+
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9),
             data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.5),
+  geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.25),
             data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -9, y= 31),
+  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -8.8, y= 31),
             show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
   annotate("text", label = "Global before and \non mean year (1999)",                  # mean year
-           x = -5, y = 31.4, colour = "#6EB7B4", size = 3) +
+           x = -5.2, y = 31.4, colour = "#6EB7B4", size = 3) +
   annotate("text", label = "Global after \nmean year (1999)",                          # mean year
-           x = -6.5, y = 31.4, colour = "#88669C", size = 3) +
+           x = -6.3, y = 31.4, colour = "#88669C", size = 3) +
   labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
@@ -401,8 +404,8 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC (log 2)", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference (log 2)", x = 5.2, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Difference in mean\n MIC (log2)", x = 1, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "CI of \ndifference (log2)", x = 4.75, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "Mean year", x = 8.2, y = 31.25, colour = "#5D5D5D") +  # mean year
   geom_text(aes(label = round(change_mean,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo, 3), ", ", round(ci_change_hi, 3), "]"), x = 6.5),
@@ -410,7 +413,7 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
   geom_text(aes(label = mean_year, x = 8.75),                                      # mean year
             hjust = 1, colour = "#5D5D5D")+
   labs(x = "", y = "") +
-  coord_cartesian(xlim = c(0,10))
+  coord_cartesian(xlim = c(-1,10))
 
 layout <- c(
   patchwork::area(t = 1, l = 1, b = 30, r = 2), # left plot, starts at the top of the page (0) and goes 30 units down and 3 units to the right
