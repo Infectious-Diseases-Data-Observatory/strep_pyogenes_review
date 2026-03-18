@@ -20,7 +20,8 @@ dd_plot = ggplot(world_map %>%
                  filter(alpha_3_code == "LSO"), colour = "black", fill = "#E0E0E0",
                linewidth = 0.1, show.legend = FALSE)+
   scale_fill_viridis_c(values = c(0, 0.1, 0.2, 0.5, 1), na.value = "#E0E0E0") +
-  scale_size_continuous(range = c(2,6)) +
+  scale_size_continuous(range = c(1,8),
+                        breaks = c(100, 1000, 10000, 40000)) +
   theme(panel.background = element_rect(fill = "white"),
         plot.background = element_rect(fill = "white"),
         panel.grid = element_blank(),
@@ -34,8 +35,8 @@ dd_plot = ggplot(world_map %>%
        size = "Number of isolates") +
   geom_point(mapping = aes(size = sum_iso, x = centroid_long, y = centroid_lat, group = alpha_3_code),
              data = dd_df %>%
-               left_join(centroids, by = c("alpha_3_code")), alpha = .8,
-             colour = "#D5573B", pch = 19, stroke = 1.2)+
+               left_join(centroids, by = c("alpha_3_code")), alpha = .7,
+             colour = "#D5573B", pch = 21, stroke = 1.2, fill = "#EAA79A")+
   guides(fill = guide_colorbar(order = 1),
          size = guide_legend(order = 2))
 
