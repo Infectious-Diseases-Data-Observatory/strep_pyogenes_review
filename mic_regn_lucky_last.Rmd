@@ -1,0 +1,326 @@
+---
+title: "MIC regression"
+author: "Lucy Harrison"
+date: "2026-03-17"
+output: pdf_document
+---
+
+## Preamble
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(cowplot)
+library(readxl)
+library(viridisLite)
+
+# install_github("lu-harr/iddoPal")
+library(iddoPal)
+# install_github("lu-harr/looseVis")
+library(looseVis)
+
+# cobble a palette together ...
+pal <- c(rev(viridis(4)),  
+         pals$loosepal[3],
+         iddo_palettes$iddo[1],
+         "orange") %>% 
+  unname()
+
+# To populate WHO regions
+who_df <- matrix(c(c("1", "Africa"),
+                c("2","Americas"),
+                c("3", "Eastern Mediterranean"),
+                c("4","Europe"),
+                c("5", "Southeast Asia"),
+                c("6", "Western Pacific")),
+                ncol = 2, byrow = TRUE) %>%
+  data.frame() %>%
+  setNames(c("nume", "name"))
+
+#dat <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260228.csv")
+dat_raw <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260305.csv") %>%
+  mutate(who = as.factor(who)) %>%
+  left_join(who_df, by = join_by(who == nume)) %>%
+  mutate(who_name = ifelse(is.na(name), "Not assigned", name),
+         who_name = factor(who_name,
+                            levels = c(who_df$name, "Not assigned")))
+dat_nos_only <- dat_raw %>% filter(!is.na(micnos_1))
+
+# derived set from RP
+dat_agg <- read.csv("data/gas_mic_aggregated.csv") %>%
+  mutate(who = as.factor(who)) %>%
+  left_join(who_df, by = join_by(who == nume)) %>%
+  mutate(who_name = ifelse(is.na(name), "Not assigned", name),
+         who_name = factor(who_name,
+                            levels = c(who_df$name, "Not assigned")))
+
+# dat_agg <- dat_raw %>%
+#   filter(!is.na(mic90_1)) %>%
+#   bind_rows(dat_nos_only %>%
+#               mutate(author = gsub("-", " ", author)) %>% # suss of first study
+#               group_by(author, country, isolate_yr) %>%
+#               summarise(mic90_1 = quantile(micnos_1, probs = 0.9),
+#                         count = sum(count)))
+
+head(dat_agg)
+```
+
+## Fit regression models
+
+### Complete MIC data (NOS)
+
+```{r}
+# apply log to the mics (mix of NOS and 90):
+dat_nos_only <- dat_nos_only %>%
+  mutate(mic_logged = log2(micnos_1))
+
+# fit a model weighted by inverse sqrt sample sizes to determine residual errors:
+# weights in full model
+mod_init = lm(mic_logged ~ isolate_yr, dat_nos_only, weights = 1/sqrt(count))
+summary(mod_init)
+
+# setting weight to median absolute residuals
+wts <- data.frame(isolate_yr = dat_nos_only$isolate_yr,
+                  resid = mod_init$residuals) %>%
+  group_by(isolate_yr) %>%
+  summarise(wt = median(abs(resid)))
+
+dat_nos_only <- dat_nos_only %>%
+  left_join(wts)
+
+mod_weighted_nos_only <- lm(mic_logged ~ isolate_yr, dat_nos_only, weights = wt)
+confint(mod_weighted_nos_only)
+summary(mod_weighted_nos_only)
+
+# this is slope on log-scale:
+coefficients(mod_weighted_nos_only)[2]
+2**(coefficients(mod_weighted_nos_only)[2])
+2**confint(mod_weighted_nos_only)[2,]
+```
+
+### All studies: MIC90
+
+```{r}
+# apply log to the mics (mix of NOS and 90):
+dat_agg <- dat_agg %>%
+  mutate(mic_logged = log2(mic_90_agg))
+
+# fit a model weighted by inverse sqrt sample sizes to determine residual errors:
+# weights in full model
+mod_init = lm(mic_logged ~ isolate_yr, dat_agg, weights = 1/sqrt(count))
+summary(mod_init)
+
+# setting weight to median absolute residuals
+wts <- data.frame(isolate_yr = dat_agg$isolate_yr,
+                  resid = mod_init$residuals) %>%
+  group_by(isolate_yr) %>%
+  summarise(wt = median(abs(resid)))
+
+dat_agg <- dat_agg %>%
+  left_join(wts)
+
+mod_weighted_agg <- lm(mic_logged ~ isolate_yr, dat_agg, weights = wt)
+confint(mod_weighted_agg)
+summary(mod_weighted_agg)
+
+# this is slope on log-scale:
+coefficients(mod_weighted_agg)[2]
+2**(coefficients(mod_weighted_agg)[2])
+2**confint(mod_weighted_agg)[2,]
+```
+
+## Now for some plots
+
+Common attributes:
+
+```{r}
+YLIM <- range(c(dat_agg$mic_90_agg, dat_nos_only$micnos_1))
+Y_LOWER <- YLIM[1]
+SIZE_LIMS <- range(c(dat_agg$count, dat_nos_only$count))
+yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+```
+
+### Complete MIC data (NOS only)
+
+```{r}
+X_LOWER <- 1965
+
+# here comes the model again:
+newdata <- data.frame(isolate_yr = seq(X_LOWER, max(dat_nos_only$isolate_yr) + 2))
+ci <- predict(mod_weighted_nos_only, 
+                 newdata = newdata,
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat_nos_only$isolate_yr) + 2))
+
+p1 <- ggplot(dat_nos_only %>%
+            filter(!is.na(micnos_1)) %>%
+            group_by(isolate_yr, micnos_1, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = 2**fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = micnos_1,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", type = pal, drop = FALSE) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                        breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
+  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0), 
+                     breaks = seq(1970, 2010, 10), minor_breaks = NULL) +
+  labs(x = "Year", ylab = "MIC") +
+  coord_trans(y = "log2", ylim = YLIM) + 
+  theme_bw()
+
+p1
+```
+
+### All studies: MIC90
+
+```{r}
+X_LOWER <- 1927
+
+# here comes the model again:
+newdata <- data.frame(isolate_yr = seq(X_LOWER, max(dat_agg$isolate_yr) + 2))
+ci <- predict(mod_weighted_agg, 
+                 newdata = newdata,
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat_agg$isolate_yr) + 2))
+
+p2 <- ggplot(dat_agg %>%
+            filter(!is.na(mic_90_agg)) %>%
+            group_by(isolate_yr, mic_90_agg, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = 2**fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = mic_90_agg,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", 
+                       type = pal,
+                       guide = guide_legend(override.aes = list(size = 5),
+                                            ncol = 2)) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                        breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
+  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0),
+                     breaks = seq(1930, 2010, 10), minor_breaks = NULL) +
+  xlab("Year") + 
+  ylab("MIC90") +
+  coord_trans(y = "log2", ylim = YLIM) + 
+  theme_bw() +
+  theme(
+    legend.box = "horizontal",
+    legend.box.just = "top",
+    plot.background = element_rect(fill = "transparent", colour = "transparent")
+  )
+
+p2
+```
+
+Putting it all together:
+
+```{r}
+p <- plot_grid(p2 + theme(legend.position = "none",
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, unit = "pt")), 
+          p1 + theme(legend.position = "none",
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, unit = "pt")),
+          labels = c("(a) MIC90: all studies",
+                     "(b) Studies documenting MIC for all isolates"),
+          label_fontface = "plain",
+          rel_widths = c(0.6, 0.4),
+          label_x = c(0.15, 0.1), hjust = 0, label_size = 12)
+
+plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.2))
+
+ggsave("figs/MIC_regression_twice.png", height = 7, width = 9, bg = "transparent")
+```
+
+TODO
+- report Rsq
+
+```{r}
+hist_dat <- dat_agg %>% # from Rhys' aggregate file
+  filter(!is.na(mic90_1)) %>%
+  bind_rows(dat_nos_only) %>% # NOS only
+  pivot_longer(cols = c(micnos_1, mic90_1), names_to = "type") %>%
+  filter(!is.na(value)) %>%
+  mutate(value = round(value, digits = 4)) %>%
+  summarise(count = sum(count), .by = c(value, type)) %>%
+  mutate(logmic = log2(value)) %>%
+  mutate(type = ifelse(type == "mic90_1", 
+                       "Aggregate MIC90 reported only",
+                       "All MICs reported"))
+
+x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
+
+# for labels on bars:
+to_lab <- hist_dat %>%
+  # only highest ones:
+  filter((type == "Aggregate MIC90 reported only" & count > 2000) |
+           (type == "All MICs reported" & count > 1000)) %>%
+  mutate(nudge_y = ifelse(type == "Aggregate MIC90 reported only", 
+                          1200, 300),
+         hjust = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
+         vjust = ifelse(count %in% c(2727, 3097, 2030), 0.5, 1),
+         #nudge_x = ifelse(count %in% c(2727, 2100), 0, 0.5),
+         lab = ifelse(count %in% c(2727, 3097, 2030),
+                      paste0("MIC:\n", value, "\n(", count, ")"),
+                      paste0("MIC: ", value, "\n(", count, ")")))
+
+ggplot(data = hist_dat) +
+  geom_bar(aes(x = logmic, y = count, 
+           fill = type), 
+           alpha = 0.6, 
+           stat = "identity",
+           width = 0.05) +
+  # here are labels on top of higher bars:
+  geom_text(aes(x = logmic, y = count, label = lab), 
+            data = to_lab,
+            hjust = to_lab$hjust,
+            vjust = to_lab$vjust,
+             nudge_y = to_lab$nudge_y,
+             #nudge_x = to_lab$nudge_x,
+            size = 2.5) +
+  facet_wrap(~ type, ncol = 1, scales = "free_y") +
+  scale_x_continuous(breaks = log2(x_breaks),
+                      labels = x_breaks) +
+  scale_fill_manual(values = pal[2:3]) +
+  ylab("Number of isolates") +
+  xlab("MIC") +
+  theme_bw() +
+  theme(legend.position = "none")
+  
+ggsave("figs/all_mics.png", height = 6, width = 6)
+```
+
+
+
+
+
+
+
