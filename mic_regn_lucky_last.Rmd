@@ -136,7 +136,7 @@ Common attributes:
 
 ```{r}
 YLIM <- range(c(dat_agg$mic_90_agg, dat_nos_only$micnos_1))
-Y_LOWER <- YLIM[1]
+Y_LOWER <- log2(0.0018)
 SIZE_LIMS <- range(c(dat_agg$count, dat_nos_only$count))
 yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 ```
