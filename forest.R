@@ -278,7 +278,7 @@ country_mic_agg_log = gas_mic_agg %>%
          ci_change_hi_ori = change_mean_ori + qt(0.975, n + lag(n) - 2)*change_se_ori) %>%
   ungroup() %>%
   mutate(alpha_3_code = as.factor(alpha_3_code)) %>%
-  left_join(gas_data %>%
+  left_join(gas_mic_agg %>%
               group_by(alpha_3_code) %>%
               mutate(median_year = floor(median(isolate_yr, na.rm = TRUE)),
                      median_grp = as.factor(if_else(isolate_yr <= median_year, 1, 2)),
