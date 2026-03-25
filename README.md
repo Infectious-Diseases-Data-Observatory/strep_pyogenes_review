@@ -20,4 +20,4 @@ All figures will be saved into `/figs/`. Data used or produced in analysis is st
 
 #### Contact
 
-Corresponding author for the paper is Dr Thel K. Hla (`Thel.Hla@thekids.org.au`)
+Corresponding author for the paper is Dr Thel K. Hla ([Thel.Hla\@thekids.org.au](mailto:Thel.Hla@thekids.org.au){.email})
