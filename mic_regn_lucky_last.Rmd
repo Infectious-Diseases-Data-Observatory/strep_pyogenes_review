@@ -258,6 +258,7 @@ p <- plot_grid(p2 + theme(legend.position = "none",
 plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.2))
 
 ggsave("figs/MIC_regression_twice.png", height = 7, width = 9, bg = "transparent")
+ggsave("figs/MIC_regression_twice.svg", height = 7, width = 9, bg = "transparent")
 ```
 
 TODO
@@ -354,6 +355,7 @@ ggdraw(p) +
              vjust = 1.5, size = 12)
   
 ggsave("figs/all_mics.png", height = 6, width = 6)
+ggsave("figs/all_mics.svg", height = 6, width = 6)
 
 # ggplot(data = hist_dat) +
 #   geom_bar(aes(x = logmic, y = count, 
@@ -510,6 +512,7 @@ p <- plot_grid(p2 + theme(legend.position = "none"),
 plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.25))
 
 ggsave("figs/ordinal_regression.png", height = 7, width = 9, bg = "transparent")
+ggsave("figs/ordinal_regression.svg", height = 7, width = 9, bg = "transparent")
 ```
 
 
