@@ -263,8 +263,12 @@ ggsave("figs/MIC_regression_twice.png", height = 7, width = 9, bg = "transparent
 TODO
 - report Rsq
 
+## Total isolates by MIC90/raw MIC
+
+Figure 3: what are the spreads of the two subsets?
+
 ```{r}
-hist_dat <- dat_agg %>% # from Rhys' aggregate file
+hist_dat <- dat_raw %>% # from Rhys' aggregate file
   filter(!is.na(mic90_1)) %>%
   bind_rows(dat_nos_only) %>% # NOS only
   pivot_longer(cols = c(micnos_1, mic90_1), names_to = "type") %>%
@@ -274,7 +278,7 @@ hist_dat <- dat_agg %>% # from Rhys' aggregate file
   mutate(logmic = log2(value)) %>%
   mutate(type = ifelse(type == "mic90_1", 
                        "Aggregate MIC90 reported only",
-                       "All MICs reported"))
+                       "Non-aggregated MIC reported"))
 
 x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 
@@ -282,17 +286,45 @@ x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 to_lab <- hist_dat %>%
   # only highest ones:
   filter((type == "Aggregate MIC90 reported only" & count > 2000) |
-           (type == "All MICs reported" & count > 1000)) %>%
-  mutate(nudge_y = ifelse(type == "Aggregate MIC90 reported only", 
+           (type == "Non-aggregated MIC reported" & count > 1000)) %>%
+  mutate(nudge_yy = ifelse(type == "Non-aggregated MIC reported", 
                           1200, 300),
-         hjust = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
-         vjust = ifelse(count %in% c(2727, 3097, 2030), 0.5, 1),
+         hjustt = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
+         vjustt = ifelse(count %in% c(2727, 3097, 2030), 0.5, 1),
          #nudge_x = ifelse(count %in% c(2727, 2100), 0, 0.5),
          lab = ifelse(count %in% c(2727, 3097, 2030),
                       paste0("MIC:\n", value, "\n(", count, ")"),
                       paste0("MIC: ", value, "\n(", count, ")")))
 
-ggplot(data = hist_dat) +
+xlim = c(0.0019, 0.15)
+
+p1 <- ggplot(data = hist_dat %>%
+               filter(type == "Aggregate MIC90 reported only")) +
+  geom_bar(aes(x = logmic, y = count, 
+           fill = type), 
+           alpha = 0.6, 
+           stat = "identity",
+           width = 0.05) +
+  # here are labels on top of higher bars:
+  geom_text(aes(x = logmic, y = count, label = lab, 
+                hjust = hjustt), 
+            data = to_lab %>%
+               filter(type == "Aggregate MIC90 reported only"),
+             nudge_y = 1500,
+            vjust = 1,
+            size = 2.5) +
+  facet_wrap(~ type, ncol = 1, scales = "free_y") +
+  scale_x_continuous(breaks = log2(x_breaks),
+                      labels = x_breaks,
+                      limits = log2(xlim)) +
+  scale_fill_manual(values = pal[2]) +
+  ylab("") +
+  xlab("MIC90") +
+  theme_bw() +
+  theme(legend.position = "none")
+
+p2 <- ggplot(data = hist_dat %>%
+               filter(type == "Non-aggregated MIC reported")) +
   geom_bar(aes(x = logmic, y = count, 
            fill = type), 
            alpha = 0.6, 
@@ -300,27 +332,184 @@ ggplot(data = hist_dat) +
            width = 0.05) +
   # here are labels on top of higher bars:
   geom_text(aes(x = logmic, y = count, label = lab), 
-            data = to_lab,
-            hjust = to_lab$hjust,
-            vjust = to_lab$vjust,
-             nudge_y = to_lab$nudge_y,
-             #nudge_x = to_lab$nudge_x,
+            data = to_lab %>%
+               filter(type == "Non-aggregated MIC reported"),
+             nudge_y = 400,
+            vjust = 1,
             size = 2.5) +
   facet_wrap(~ type, ncol = 1, scales = "free_y") +
   scale_x_continuous(breaks = log2(x_breaks),
-                      labels = x_breaks) +
-  scale_fill_manual(values = pal[2:3]) +
-  ylab("Number of isolates") +
+                      labels = x_breaks,
+                      limits = log2(xlim)) +
+  scale_fill_manual(values = pal[3]) +
+  ylab("") +
   xlab("MIC") +
   theme_bw() +
   theme(legend.position = "none")
+
+p <- plot_grid(p1, p2, ncol = 1)
+
+ggdraw(p) +
+  draw_label("Number of isolates", x = 0, y = 0.5, angle = 90, 
+             vjust = 1.5, size = 12)
   
 ggsave("figs/all_mics.png", height = 6, width = 6)
+
+# ggplot(data = hist_dat) +
+#   geom_bar(aes(x = logmic, y = count, 
+#            fill = type), 
+#            alpha = 0.6, 
+#            stat = "identity",
+#            width = 0.05) +
+#   # here are labels on top of higher bars:
+#   geom_text(aes(x = logmic, y = count, label = lab, 
+#                 hjust = hjustt, vjust = vjustt), 
+#             data = to_lab,
+#              nudge_y = to_lab$nudge_yy,
+#             size = 2.5) +
+#   # abandoning
+#   facet_wrap(~ type, ncol = 1, scales = "free_y") +
+#   scale_x_continuous(breaks = log2(x_breaks),
+#                       labels = x_breaks,
+#                       limits = log2(xlim)) +
+#   scale_fill_manual(values = pal[2:3]) +
+#   ylab("") +
+#   xlab("MIC90") +
+#   theme_bw() +
+#   theme(legend.position = "none")
 ```
 
+## Ordinal regression
+
+What happens when we try to reapply the linear regression treating MICs as ordinal? We could really treat MICs as categories as intermediate MICs are not (usually) tested. For this reason, we've had a look at ordinal regression in the chunk below. We resolved not to do this because the data was all created under different settings with (probably) different dilutions, different methods of calculating MIC90, etc.
+
+First let's have a look at raw MICs only:
+
+```{r}
+library(MASS)
+
+ordinal_regn_please <- function(dat, bins, ylab, main, 
+                                weight = TRUE, xlower = 1927){
+  dat <- mutate(dat,
+                mic_binned = cut(mic, 
+                                 breaks = c(0, bins), 
+                                 ordered_result = TRUE))
+  
+  # two poss models:
+  if (weight){
+    model <- polr(mic_binned ~ isolate_yr, 
+                data = dat, 
+                Hess = TRUE,
+                weights = count, # here, weights are frequencies
+                method = "probit") # fails to converge under logit: fatter tail
+  } else {
+    model <- polr(mic_binned ~ isolate_yr, 
+              data = dat, 
+              Hess = TRUE) 
+  }
+  
+  # Fit the model - no need to log: that would be for visualisation purposes only under ordinal model
+  # tried using wts from logged model ......... not thinking too hard about that but we should at some point
+  # it looks like weights need to be integers as we end up assuming binomial glm for ordinal *logistic* regression
+  # haven't thought too hard about this ... may need to be probit link
+  
+  print(summary(model))
+  # note the slope here
+  
+  new_data = data.frame(isolate_yr = seq(xlower, 
+                                         max(dat$isolate_yr) + 2))
+  preds <- predict(model, 
+                   newdata = new_data,
+                   type = "probs") %>%
+    as.data.frame() %>%
+    mutate(max_probs = max.col(across(starts_with("(")))) %>%
+    mutate(isolate_yr = new_data$isolate_yr)
+  
+  if (length(unique(preds$max_probs)) == 1){
+    message(paste0("Most probable class stays the same:",
+                 unique(preds$max_probs)))
+  } else {
+    message(paste0(c("Most probable class changes:\n", unique(preds$max_probs)), 
+                   collapse = " "))
+  }
+  
+  
+  preds_long <- pivot_longer(preds, starts_with("(")) %>%
+    mutate(lower = str_extract(name, "(?<=\\()[^,]+") %>% as.numeric(),
+           upper = str_extract(name, "(?<=,)[^]]+") %>% as.numeric(),
+           height = lower + (upper - lower)*value) %>%
+    filter(lower != 0)
+  
+  preds_change <- preds %>%
+    group_by(max_probs) %>%
+    summarise(xmin = first(isolate_yr) - 0.5,
+              xmax = last(isolate_yr) + 0.5) %>%
+    mutate(ymin = bins[max_probs - 1],
+           ymax = bins[max_probs])
+  
+  # so now we have colour bars representing class probability between the lower 
+  # and upper extents of the bins ... which don't change much because there isn't
+  # much change in MIC slope over time
+  ggplot(data = dat) +
+    geom_point(aes(x = isolate_yr, y = mic, size = count),
+               alpha = 0.5, col = "grey30") +
+    scale_y_continuous(trans = "log2", breaks = bins, minor_breaks = NULL) +
+    geom_ribbon(data = preds_long, 
+                aes(ymin = lower, ymax = height, fill = name, x = isolate_yr), 
+                alpha = 0.5) +
+    scale_fill_discrete("MIC interval") +
+    scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                          breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+    # (the -1 is because I removed the bottom bin)
+    # this is a bit gross but I've put the line in the middle
+    # geom_hline(yintercept = 2**(sum(log2(bins[preds$max_probs[1] + c(0,-1)])) / 2)) +
+    # annotate(geom = "rect",
+    #          xmin = xlower, 
+    #           xmax = max(new_data$isolate_yr),
+    #           ymin = bins[preds$max_probs[1] - 1],
+    #           ymax = bins[preds$max_probs[1]], col = "black", fill = NA) +
+    geom_rect(data = preds_change,
+              aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
+              col = "black", fill = NA) +
+    xlab("Year") +
+    ylab(ylab) +
+    labs(title = main) +
+    theme_bw() +
+    theme(
+      legend.box = "horizontal",
+      legend.box.just = "top",
+      plot.background = element_rect(fill = "transparent", colour = "transparent"),
+      plot.title = element_text(size=11)
+    )
+}
 
 
+p1 <- ordinal_regn_please(dat_nos_only %>% mutate(mic = micnos_1),
+                    bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
+                    xlower = 1965, ylab = "MIC",
+                    main = "(b) Studies documenting MIC for all isolates")
+p1
 
+p2 <- ordinal_regn_please(dat_agg %>% mutate(mic = mic_90_agg),
+                    bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
+                    ylab = "MIC90", main = "(a) MIC90: all studies")
 
+p2
+
+```
+
+Caption: Ordinal regression of MIC data (as in Figure 4): coloured regions represent predicted probability of MIC interval over time; the most probable interval, which does not change over time in either case, is highlighted with a black rectangle. Intervals are right-inclusive: the interval (0.008, 0.016] includes MIC 0.016 and excludes MIC 0.008.
+
+Here we put the subplots together:
+
+```{r}
+p <- plot_grid(p2 + theme(legend.position = "none"), 
+          p1 + theme(legend.position = "none"),
+          rel_widths = c(0.6, 0.45))
+
+plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.25))
+
+ggsave("figs/ordinal_regression.png", height = 7, width = 9, bg = "transparent")
+```
 
 
