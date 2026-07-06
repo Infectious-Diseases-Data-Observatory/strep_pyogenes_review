@@ -77,7 +77,7 @@ dat_nos_only <- dat_nos_only %>%
 
 # fit a model weighted by inverse sqrt sample sizes to determine residual errors:
 # weights in full model
-mod_init = lm(mic_logged ~ isolate_yr, dat_nos_only, weights = 1/sqrt(count))
+mod_init <- lm(mic_logged ~ isolate_yr, dat_nos_only, weights = 1/sqrt(count))
 summary(mod_init)
 
 # setting weight to median absolute residuals
@@ -99,12 +99,110 @@ coefficients(mod_weighted_nos_only)[2]
 2**confint(mod_weighted_nos_only)[2,]
 ```
 
+#### Adding random effect on study
+
+```{r}
+
+dat_nos_only %>% 
+  # clarify this is right:
+  group_by(author, pub_yr) %>%
+  summarise(n = n()) %>%
+  as.data.frame()
+
+X_LOWER <- 1965
+
+# note misspelling of Abd El[ |-]Ghany
+
+library(lme4)
+dat_nos_only_uncounted <- dat_nos_only %>%
+  mutate(study = factor(paste(author, pub_yr, sep = ","))) %>%
+  uncount(count)
+
+mod_fixed <- lm(mic_logged ~ isolate_yr, dat_nos_only_uncounted)
+tmp <- 2**confint(mod_fixed)
+tmp[2, 1:2]
+
+# we don't have multiple observations in the same study across multiple years - do we gain
+# much structure from random effect on study?
+mod_mixed <- lmer(mic_logged ~ isolate_yr + (1|study), dat_nos_only_uncounted)
+mod_mixed <- lmer(mic_logged ~ isolate_yr + (1|country), dat_nos_only_uncounted)
+
+summary(mod_mixed)
+# this is what we want in the text:
+tmp <- 2**confint(mod_mixed)
+# ... and now we're slightly positive
+tmp[4, 1:2]
+
+# dropping code for plot up here:
+newdata <- data.frame(isolate_yr = seq(X_LOWER, max(dat_nos_only$isolate_yr) + 2),
+                      study = "NA,NA", country = "NA")
+
+fixed_eff_pred <- data.frame(y = 2**predict(mod_fixed, newdata),
+                             x = newdata$isolate_yr)
+
+# bootstrap to get approximate CI
+boot_ci <- bootMer(mod_mixed,
+                   nsim = 100,
+                   FUN = function(x){
+                     predict(x, newdata = newdata, re.form = NA) 
+                     # ignoring random effect in prediction
+                   })
+
+mixed_eff_pred <- apply(boot_ci$t, 2, function(x){quantile(x, probs = c(0.025, 0.5, 0.975))}) %>%
+  t() %>%
+  as.data.frame() %>%
+  setNames(nm = c("lwr", "fit", "upr")) %>%
+  bind_cols(newdata %>% dplyr::select(isolate_yr))
+
+
+
+p1 <- ggplot(dat_nos_only %>%
+            filter(!is.na(micnos_1)) %>%
+            group_by(isolate_yr, micnos_1, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_line(data = fixed_eff_pred, aes(x = x, y = y)) +
+  geom_ribbon(data = mixed_eff_pred, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = mixed_eff_pred, aes(x = isolate_yr, y = 2**fit),
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = micnos_1,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", type = pal, drop = FALSE) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                        breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
+  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0), 
+                     breaks = seq(1970, 2010, 10), minor_breaks = NULL) +
+  labs(x = "Year", ylab = "MIC") +
+  coord_trans(y = "log2", ylim = YLIM) + 
+  theme_bw()
+
+p1
+
+```
+
 ### All studies: MIC90
 
 ```{r}
 # apply log to the mics (mix of NOS and 90):
 dat_agg <- dat_agg %>%
   mutate(mic_logged = log2(mic_90_agg))
+
+# shouldn't these be one per study?
+dat_agg %>% 
+  filter(!is.na(mic_logged)) %>% 
+  group_by(author, pub_yr, country) %>% 
+  summarise(n = n()) %>%
+  filter(n > 1)
 
 # fit a model weighted by inverse sqrt sample sizes to determine residual errors:
 # weights in full model
