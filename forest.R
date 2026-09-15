@@ -81,6 +81,8 @@ forest_data = bind_rows(country_data, global_data)%>%
                                 "UNCLASSIFIED", alpha_3_code)) %>%
   left_join(who_regions, by = c("alpha_3_code" = "code")) %>%
   mutate(
+    alpha_3_code = fct_relevel(alpha_3_code, "UNCLASSIFIED", after = Inf),
+    # entity = fct_relevel(entity, "UNCLASSIFIED", after = Inf),
     # alpha_3_code = factor(
     #   alpha_3_code, levels = c("SEN", "ZAF", "ARG", "BRA", "CAN", "MEX", "USA",
     #                          "EGY", "MAR", "AUT", "BEL", "CHE", "DEU", "DNK",
@@ -111,7 +113,8 @@ paired_countries = (forest_data %>%
                       filter(n == 2))$alpha_3_code
 
 forest_data_pairs = forest_data %>%
-  filter(alpha_3_code %in% paired_countries)
+  filter(alpha_3_code %in% paired_countries) |>
+  mutate(entity = fct_relevel(entity, "UNCLASSIFIED", after = Inf))
 
 write_csv(forest_data_pairs, "data/output/forest_data_granular_logged.csv")
 
@@ -329,6 +332,7 @@ forest_mic_agg_log = bind_rows(country_mic_agg_log, global_mic_agg_log)%>%
                                 "UNCLASSIFIED", alpha_3_code)) %>%
   left_join(who_regions, by = c("alpha_3_code" = "code")) %>%
   mutate(
+    alpha_3_code = fct_relevel(alpha_3_code, "UNCLASSIFIED", after = Inf),
     # alpha_3_code = factor(
     #   alpha_3_code, levels = c("SEN", "ZAF", "ARG", "BRA", "CAN", "MEX", "USA",
     #                          "EGY", "MAR", "AUT", "BEL", "CHE", "DEU", "DNK",
@@ -359,7 +363,8 @@ paired_countries_mic_agg_log = (forest_mic_agg_log %>%
                                   filter(n == 2))$alpha_3_code
 
 forest_mic_agg_pairs_log = forest_mic_agg_log %>%
-  filter(alpha_3_code %in% paired_countries_mic_agg_log)
+  filter(alpha_3_code %in% paired_countries_mic_agg_log) |>
+  mutate(entity = fct_relevel(entity, "UNCLASSIFIED", after = Inf))
 
 write_csv(forest_mic_agg_pairs_log, "data/output/forest_data_aggregated_logged.csv")
 
