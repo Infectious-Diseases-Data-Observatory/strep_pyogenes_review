@@ -39,8 +39,8 @@
 17,1,"Coonan",1994,1990,2,"United States Of America (The)","USA",282,0.006,0.012,NA,0.012,NA,0.012
 17,NA,"Coonan",1994,1990,2,"United States Of America (The)","USA",43,0.0078,0.0078,NA,0.0078,NA,0.0078
 18,1,"de Almeida Torres",2011,2001,2,"Brazil","BRA",1112,0.015,0.03,NA,0.03,NA,0.03
-19,1,"d'Humières",2012,2010,4,"France","FRA",9,0.008,0.008,NA,0.008,NA,0.008
-19,NA,"d'Humières",2012,2010,4,"France","FRA",10,0.006,0.008,NA,0.008,NA,0.008
+19,1,"d'HumiÃ¨res",2012,2010,4,"France","FRA",9,0.008,0.008,NA,0.008,NA,0.008
+19,NA,"d'HumiÃ¨res",2012,2010,4,"France","FRA",10,0.006,0.008,NA,0.008,NA,0.008
 20,1,"Dohar",2004,2001,NA,"Multiple",NA,39,0.008,0.008,NA,0.008,NA,0.008
 21,1,"Felmingham",2004,1999,NA,"Multiple",NA,640,0.008,0.008,NA,0.008,NA,0.008
 22,1,"Forsgren",1994,1986,4,"Sweden","SWE",100,0.015,0.015,NA,0.015,NA,0.015
@@ -119,6 +119,8 @@
 158,1,"Ubukata",2020,2012,6,"Japan","JPN",634,0.016,0.016,NA,0.016,NA,0.016
 249,1,"Kohno",2003,1999,NA,"Multiple",NA,1485,0.008,0.008,NA,0.008,NA,0.008
 322,1,"Smayevsky",2000,1998,2,"Argentina","ARG",96,0.004,0.008,NA,0.008,NA,0.008
+383,1,"Sitkiewicz",2024,2010,4,"Poland","POL",367,0.015,0.03,NA,0.03,NA,0.03
+388,1,"Villalon",2026,2022,4,"Spain","ESP",138,0.008,0.012,NA,0.012,NA,0.012
 1,NA,NA,NA,2014,3,"Egypt","EGY",60,NA,NA,NA,NA,0.12,0.12
 2,NA,NA,NA,2006,NA,"Unknown",NA,10,NA,NA,NA,NA,0.0204,0.0204
 5,NA,NA,NA,2006,3,"Morocco","MAR",65,NA,NA,NA,NA,0.032,0.032
@@ -212,3 +214,6 @@
 104,NA,NA,NA,1987,2,"United States Of America (The)","USA",20,NA,NA,NA,NA,0.02,0.02
 108,NA,NA,NA,1985,6,"Japan","JPN",670,NA,NA,NA,NA,0.016,0.016
 239,NA,NA,NA,1993,4,"Greece","GRC",49,NA,NA,NA,NA,0.004,0.004
+360,NA,NA,NA,2021,2,"United States Of America (The)","USA",28,NA,NA,NA,NA,0.023,0.023
+365,NA,NA,NA,2017,4,"Portugal","PRT",3,NA,NA,NA,NA,0.016,0.016
+381,NA,NA,NA,2011,4,"United Kingdom Of Great Britain And Northern Ireland (The)","GBR",1469,NA,NA,NA,NA,0.008,0.008
