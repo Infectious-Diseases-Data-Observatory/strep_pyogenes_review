@@ -18,8 +18,9 @@ centroids = read_csv("data/centroids.csv", show_col_types = FALSE,
 
 #=============================================================================================================================
 
-gas_data = read_csv("data/GAS_SR_Raw_50_90_NOS_20260305.csv", show_col_types = FALSE) %>%
-  select(-redcap_repeat_instrument, -redcap_event_name) %>%
+gas_data = read_csv("data/GAS_SR_Raw_50_90_NOS_20260911.csv", show_col_types = FALSE,
+                    locale = locale(encoding = "latin1")) %>%
+  select(-redcap_repeat_instrument, -redcap_event_name, -starts_with("...1")) %>%
   mutate(mic90nos = if_else(is.na(micnos_1),
                             mic90_1, micnos_1))
 
@@ -64,14 +65,16 @@ write.csv(gas_mic_agg, "data/gas_mic_aggregated.csv", row.names = FALSE)
 
 #=============================================================================================================================
 
-ready <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>%
+ready <- read_csv("data/ALL_geosetting_20260910.csv", show_col_types = FALSE,
+                  locale = locale(encoding = "latin1")) %>%
   filter(redcap_event_name == "data_extraction_arm_2") %>%
   dplyr::select(ddwho1,ddcountry1,ddno1, redcap_repeat_instrument, record_id) %>%
   rename("who" = "ddwho1",
          "country" = "ddcountry1",
          "count" = "ddno1")
 
-raw <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>%
+raw <- read_csv("data/ALL_geosetting_20260910.csv", show_col_types = FALSE,
+                locale = locale(encoding = "latin1")) %>%
   filter(redcap_event_name == "mic_data_extractio_arm_1") %>%
   rename_with(~ gsub("mic50_", "", .x, fixed = TRUE)) %>%
   pivot_longer(cols = who_1:count_7,
@@ -81,8 +84,6 @@ raw <- read_csv("data/ALL_geosetting_22082025.csv", show_col_types = FALSE) %>%
   drop_na(count)
 
 geospat_pivot = rbind(ready, raw)
-rm(raw)
-rm(ready)
 
 dd_sr <- geospat_pivot %>%
   separate_rows(country, sep = ",") %>%
@@ -94,9 +95,10 @@ dd_sr <- geospat_pivot %>%
 
 dd_sr[which(dd_sr$country == "USA"), "country"] = "United States of America (the)"
 dd_sr[which(dd_sr$country == "'North America'"), "country"] = "Multiple"
-dd_sr <- dd_sr[-which(dd_sr$country == "breakdown not reported"), ]
+# dd_sr <- dd_sr[-which(dd_sr$country == "breakdown not reported"), ]
 dd_sr[which(dd_sr$country == "Columbia"), "country"] = "Colombia"
 dd_sr[which(dd_sr$country == "Czech Rep"), "country"] = "Czechia"
+dd_sr[which(dd_sr$country == "Czech Republic"), "country"] = "Czechia"
 dd_sr[which(dd_sr$country == "Ethopia"), "country"] = "Ethiopia"
 dd_sr[which(dd_sr$country == "Europe"), "country"] = "Multiple"
 dd_sr[which(dd_sr$country == "Europe and adjacent"), "country"] = "Multiple"
@@ -117,9 +119,10 @@ dd_sr[which(dd_sr$country == "Turkey"), "country"] = "Turkiye"
 dd_sr[which(dd_sr$country == "Iran"), "country"] = "Iran (Islamic Republic of)"
 dd_sr[which(dd_sr$country == "Netherlands"), "country"] = "Netherlands (Kingdom of the)"
 
-rm(geospat_pivot)
-
 dd_sr = dd_sr %>%
   left_join(world_income, by = c("country" = "country"))
 
+rm(geospat_pivot)
+rm(raw)
+rm(ready)
 #==========================================================================================================================
