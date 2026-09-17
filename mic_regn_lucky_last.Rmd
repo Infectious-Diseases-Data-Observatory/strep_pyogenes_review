@@ -278,8 +278,9 @@ p1 <- ggplot(dat_nos_only %>%
             colour = "darkgrey", linewidth = 0.8) +
   geom_point(aes(x = isolate_yr, y = micnos_1,
                  col = who_name, 
-                 size = count), alpha = 0.5) +
-  scale_color_discrete(name = "WHO Region", type = pal, drop = FALSE) +
+                 size = count), alpha = 0.5,
+             show.legend = TRUE) +
+  scale_color_manual(name = "WHO Region", values = pal, drop = FALSE) +
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
@@ -328,7 +329,8 @@ p2 <- ggplot(dat_agg %>%
   scale_color_discrete(name = "WHO Region", 
                        type = pal,
                        guide = guide_legend(override.aes = list(size = 5),
-                                            ncol = 2)) +
+                                            ncol = 2),
+                       drop = FALSE) +
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
