@@ -6,6 +6,7 @@ library(ggtext)
 library(viridisLite)
 library(cowplot)
 library(scales)
+library(patchwork)
 
 #============================================================================================================================
 
