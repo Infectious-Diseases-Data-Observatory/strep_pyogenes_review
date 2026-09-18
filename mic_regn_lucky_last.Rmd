@@ -49,7 +49,6 @@ dat_raw <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260911.csv") %>%
 dat_nos_only <- dat_raw %>% filter(!is.na(micnos_1))
 
 # derived set from RP
-# LH to get an update here ..
 dat_agg <- read.csv("data/gas_mic_aggregated.csv") %>%
   mutate(who = as.factor(who)) %>%
   left_join(who_df, by = join_by(who == nume)) %>%
@@ -279,8 +278,9 @@ p1 <- ggplot(dat_nos_only %>%
             colour = "darkgrey", linewidth = 0.8) +
   geom_point(aes(x = isolate_yr, y = micnos_1,
                  col = who_name, 
-                 size = count), alpha = 0.5) +
-  scale_color_discrete(name = "WHO Region", type = pal, drop = FALSE) +
+                 size = count), alpha = 0.5,
+             show.legend = TRUE) +
+  scale_color_manual(name = "WHO Region", values = pal, drop = FALSE) +
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
@@ -329,7 +329,8 @@ p2 <- ggplot(dat_agg %>%
   scale_color_discrete(name = "WHO Region", 
                        type = pal,
                        guide = guide_legend(override.aes = list(size = 5),
-                                            ncol = 2)) +
+                                            ncol = 2),
+                       drop = FALSE) +
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
@@ -365,6 +366,26 @@ plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.2))
 
 ggsave("figs/MIC_regression_twice.png", height = 7, width = 9, bg = "transparent")
 ggsave("figs/MIC_regression_twice.svg", height = 7, width = 9, bg = "transparent")
+```
+
+LH coming back, making times match vertically.
+
+```{r}
+p <- plot_grid(p2 + theme(legend.position = "none",
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, 
+                                          unit = "pt")), 
+          p1 + theme(legend.position = c(-0.5, 0.5),
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 225, 
+                                          unit = "pt")),
+          labels = c("(a) MIC90: all studies",
+                     "(b) Studies documenting MIC for all isolates"),
+          label_fontface = "plain",
+          nrow = 2,
+          label_x = c(0.07, 0.45), hjust = 0, label_size = 12)
+
+p
+
+ggsave("figs/MIC_regression_twice_vertical.png", height = 9, width = 8, bg = "white")
 ```
 
 TODO
@@ -591,7 +612,7 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
     )
 }
 
-
+# that's interesting .. this slips down a class!
 p1 <- ordinal_regn_please(dat_nos_only %>% mutate(mic = micnos_1),
                     bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
                     xlower = 1965, ylab = "MIC",
