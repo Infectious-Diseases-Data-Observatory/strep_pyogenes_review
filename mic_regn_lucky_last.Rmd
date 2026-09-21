@@ -397,6 +397,8 @@ TODO
 Figure 3: what are the spreads of the two subsets?
 
 ```{r}
+sum(dat_raw$count)
+
 hist_dat <- dat_raw %>% # from Rhys' aggregate file
   filter(!is.na(mic90_1)) %>%
   bind_rows(dat_nos_only) %>% # NOS only
