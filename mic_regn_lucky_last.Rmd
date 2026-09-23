@@ -38,7 +38,7 @@ who_df <- matrix(c(c("1", "Africa"),
   data.frame() %>%
   setNames(c("nume", "name"))
 
-#dat <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260228.csv")
+# dat <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260228.csv")
 # dat_raw <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260305.csv")
 dat_raw <- read.csv("data/GAS_SR_Raw_50_90_NOS_20260911.csv") %>%
   mutate(who = as.factor(who)) %>%
@@ -155,10 +155,10 @@ mixed_eff_pred <- apply(boot_ci$t, 2, function(x){quantile(x, probs = c(0.025, 0
   setNames(nm = c("lwr", "fit", "upr")) %>%
   bind_cols(newdata %>% dplyr::select(isolate_yr))
 
-YLIM <- range(c(#dat_agg$mic_90_agg, 
+YLIM <- range(c(dat_agg$mic_90_agg, 
                 dat_nos_only$micnos_1))
 Y_LOWER <- log2(0.0018)
-SIZE_LIMS <- range(c(#dat_agg$count, 
+SIZE_LIMS <- range(c(dat_agg$count, 
                      dat_nos_only$count))
 yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 
@@ -186,7 +186,7 @@ p1 <- ggplot(dat_nos_only %>%
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
-  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0), 
+  scale_x_continuous(limits = c(X_LOWER, 2022), expand = c(0,0), 
                      breaks = seq(1970, 2010, 10), minor_breaks = NULL) +
   labs(x = "Year", ylab = "MIC") +
   coord_trans(y = "log2", ylim = YLIM) + 
@@ -284,8 +284,8 @@ p1 <- ggplot(dat_nos_only %>%
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL, name = "MIC") +
-  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0), 
-                     breaks = seq(1970, 2010, 10), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(X_LOWER, 2023), expand = c(0,0), 
+                     breaks = seq(1970, 2020, 10), minor_breaks = NULL) +
   labs(x = "Year", ylab = "MIC") +
   coord_trans(y = "log2", ylim = YLIM) + 
   theme_bw()
@@ -334,8 +334,8 @@ p2 <- ggplot(dat_agg %>%
   scale_size_continuous(range = c(1,10), name = "Number of isolates", 
                         breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
   scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
-  scale_x_continuous(limits = c(X_LOWER, 2017 + 2), expand = c(0,0),
-                     breaks = seq(1930, 2010, 10), minor_breaks = NULL) +
+  scale_x_continuous(limits = c(X_LOWER, 2023), expand = c(0,0),
+                     breaks = seq(1930, 2020, 10), minor_breaks = NULL) +
   xlab("Year") + 
   ylab("MIC90") +
   coord_trans(y = "log2", ylim = YLIM) + 
@@ -371,21 +371,25 @@ ggsave("figs/MIC_regression_twice.svg", height = 7, width = 9, bg = "transparent
 LH coming back, making times match vertically.
 
 ```{r}
-p <- plot_grid(p2 + theme(legend.position = "none",
+p <- plot_grid(
+          p1 + theme(legend.position = c(-0.5, 0.5),
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 215, 
+                                          unit = "pt")),
+          p2 + theme(legend.position = "none",
                      plot.margin = margin(t = 20, r = 0, b = 0, l = 5, 
                                           unit = "pt")), 
-          p1 + theme(legend.position = c(-0.5, 0.5),
-                     plot.margin = margin(t = 20, r = 0, b = 0, l = 225, 
-                                          unit = "pt")),
-          labels = c("(a) MIC90: all studies",
-                     "(b) Studies documenting MIC for all isolates"),
+          labels = c("(a) Trend based on individual MICs",
+                     "(b) Trend based on summarised MICs"),
           label_fontface = "plain",
           nrow = 2,
-          label_x = c(0.07, 0.45), hjust = 0, label_size = 12)
+          #label_x = c(0.07, 0.45), 
+          label_x = c(0.45, 0.07), 
+          hjust = 0, label_size = 12)
 
 p
 
 ggsave("figs/MIC_regression_twice_vertical.png", height = 9, width = 8, bg = "white")
+ggsave("figs/MIC_regression_twice_vertical.svg", height = 9, width = 8, bg = "white")
 ```
 
 TODO
@@ -396,6 +400,8 @@ TODO
 Figure 3: what are the spreads of the two subsets?
 
 ```{r}
+sum(dat_raw$count)
+
 hist_dat <- dat_raw %>% # from Rhys' aggregate file
   filter(!is.na(mic90_1)) %>%
   bind_rows(dat_nos_only) %>% # NOS only
@@ -405,17 +411,17 @@ hist_dat <- dat_raw %>% # from Rhys' aggregate file
   summarise(count = sum(count), .by = c(value, type)) %>%
   mutate(logmic = log2(value)) %>%
   mutate(type = ifelse(type == "mic90_1", 
-                       "Aggregate MIC90 reported only",
-                       "Non-aggregated MIC reported"))
+                       "Only summarised MIC reported (MIC90)",
+                       "Individual MIC reported"))
 
 x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 
 # for labels on bars:
 to_lab <- hist_dat %>%
   # only highest ones:
-  filter((type == "Aggregate MIC90 reported only" & count > 2000) |
-           (type == "Non-aggregated MIC reported" & count > 1000)) %>%
-  mutate(nudge_yy = ifelse(type == "Non-aggregated MIC reported", 
+  filter((type == "Only summarised MIC reported (MIC90)" & count > 2000) |
+           (type == "Individual MIC reported" & count > 1000)) %>%
+  mutate(nudge_yy = ifelse(type == "Individual MIC reported", 
                           1200, 300),
          hjustt = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
          vjustt = ifelse(count %in% c(2727, 3097, 2030), 0.5, 1),
@@ -427,7 +433,7 @@ to_lab <- hist_dat %>%
 xlim = c(0.0019, 0.15)
 
 p1 <- ggplot(data = hist_dat %>%
-               filter(type == "Aggregate MIC90 reported only")) +
+               filter(type == "Only summarised MIC reported (MIC90)")) +
   geom_bar(aes(x = logmic, y = count, 
            fill = type), 
            alpha = 0.6, 
@@ -437,7 +443,7 @@ p1 <- ggplot(data = hist_dat %>%
   geom_text(aes(x = logmic, y = count, label = lab, 
                 hjust = hjustt), 
             data = to_lab %>%
-               filter(type == "Aggregate MIC90 reported only"),
+               filter(type == "Only summarised MIC reported (MIC90)"),
              nudge_y = 1500,
             vjust = 1,
             size = 2.5) +
@@ -452,7 +458,7 @@ p1 <- ggplot(data = hist_dat %>%
   theme(legend.position = "none")
 
 p2 <- ggplot(data = hist_dat %>%
-               filter(type == "Non-aggregated MIC reported")) +
+               filter(type == "Individual MIC reported")) +
   geom_bar(aes(x = logmic, y = count, 
            fill = type), 
            alpha = 0.6, 
@@ -461,7 +467,7 @@ p2 <- ggplot(data = hist_dat %>%
   # here are labels on top of higher bars:
   geom_text(aes(x = logmic, y = count, label = lab), 
             data = to_lab %>%
-               filter(type == "Non-aggregated MIC reported"),
+               filter(type == "Individual MIC reported"),
              nudge_y = 400,
             vjust = 1,
             size = 2.5) +
