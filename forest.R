@@ -198,7 +198,7 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
 
 plot_regions + plot_points + plot_diffs + plot_layout(design = layout)
 
-ggsave("forest_plot_unsummarised.tif", path = "figs/", width = 15, height = 12)
+ggsave("forest_plot_unsummarised.pdf", path = "figs/", width = 15, height = 12)
 
 #===============================================================================
 country_mic_agg_log = gas_mic_agg %>%
@@ -392,5 +392,5 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
 
 plot_regions_agg_log + plot_points_agg_log + plot_diffs_agg_log + plot_layout(design = layout)
 
-ggsave("forest_plot_summerised.tif", path = "figs/", width = 15, height = 12)
+ggsave("forest_plot_summerised.pdf", path = "figs/", width = 15, height = 12)
 
