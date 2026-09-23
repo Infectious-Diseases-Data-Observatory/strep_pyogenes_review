@@ -1,16 +1,19 @@
 source("mic_data_load.R")
 
 dd_df = dd_sr %>%
+  mutate(author = str_replace_all(author, "Abd El-Ghany", "Abd El Ghany")) |>
   group_by(alpha_3_code) %>%
   mutate(sum_iso = sum(count, na.rm = TRUE),
          sum_rows = n(),
-         sum_studies = length(unique(record_id))) %>%
+         author_year = str_c(author, "-", pub_yr),
+         sum_studies = length(unique(author_year))
+         ) %>%
   slice(1) %>%
   ungroup() %>%
   select(who, country, sum_iso, sum_rows, sum_studies, alpha_3_code, alpha_2_code, income_group)
 
 dd_plot = ggplot(world_map %>%
-         filter(alpha_3_code != "ATA"), aes(x = long, y = lat, group = group)) +
+                   filter(alpha_3_code != "ATA"), aes(x = long, y = lat, group = group)) +
   geom_polygon(colour = "black", fill = "#E0E0E0", linewidth = 0.1, show.legend = FALSE) +
   geom_polygon(dd_df %>%
                  left_join(world_map, by = "alpha_3_code"),
