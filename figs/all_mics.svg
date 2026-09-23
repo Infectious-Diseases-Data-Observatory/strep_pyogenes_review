@@ -102,7 +102,7 @@
 </defs>
 <g clip-path='url(#cpNDMuNDZ8NDI2LjUyfDUuNDh8MjIuNjk=)'>
 <rect x='43.46' y='5.48' width='383.06' height='17.21' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='234.99' y='17.23' text-anchor='middle' style='font-size: 8.80px;fill: #1A1A1A; font-family: "Arial";' textLength='122.67px' lengthAdjust='spacingAndGlyphs'>Aggregate MIC90 reported only</text>
+<text x='234.99' y='17.23' text-anchor='middle' style='font-size: 8.80px;fill: #1A1A1A; font-family: "Arial";' textLength='156.36px' lengthAdjust='spacingAndGlyphs'>Only summarised MIC reported (MIC90)</text>
 </g>
 <g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHw0MzIuMDA=)'>
 <polyline points='64.96,186.85 64.96,184.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
@@ -206,7 +206,7 @@
 </defs>
 <g clip-path='url(#cpNDMuNDZ8NDI2LjUyfDIyMS40OHwyMzguNjk=)'>
 <rect x='43.46' y='221.48' width='383.06' height='17.21' style='stroke-width: 1.07; stroke: #333333; fill: #D9D9D9;' />
-<text x='234.99' y='233.23' text-anchor='middle' style='font-size: 8.80px;fill: #1A1A1A; font-family: "Arial";' textLength='117.28px' lengthAdjust='spacingAndGlyphs'>Non-aggregated MIC reported</text>
+<text x='234.99' y='233.23' text-anchor='middle' style='font-size: 8.80px;fill: #1A1A1A; font-family: "Arial";' textLength='90.89px' lengthAdjust='spacingAndGlyphs'>Individual MIC reported</text>
 </g>
 <g clip-path='url(#cpMC4wMHw0MzIuMDB8MC4wMHw0MzIuMDA=)'>
 <polyline points='64.96,402.85 64.96,400.11 ' style='stroke-width: 1.07; stroke: #333333; stroke-linecap: butt;' />
