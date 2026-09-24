@@ -154,8 +154,8 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
             data = forest_data_pairs %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -8.8, y = 31),
-            show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
+  annotate("text", label = "Number of isolates (studies)", size = 3.5,
+           colour = "#5D5D5D", x = -8.8, y= 31) +
   labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
@@ -198,7 +198,7 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
 
 plot_regions + plot_points + plot_diffs + plot_layout(design = layout)
 
-ggsave("forest_plot_unsummarised.tif", path = "figs/", width = 15, height = 12)
+ggsave("forest_plot_unsummarised.pdf", path = "figs/", width = 15, height = 12)
 
 #===============================================================================
 country_mic_agg_log = gas_mic_agg %>%
@@ -348,8 +348,8 @@ plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !=
             data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
             hjust = 1, show.legend = FALSE) +
-  geom_text(mapping = aes(label = "Number of isolates (studies)", x = -8.8, y= 31),
-            show.legend = FALSE, colour = "#5D5D5D", size = 3.5) +
+  annotate("text", label = "Number of isolates (studies)", size = 3.5,
+            colour = "#5D5D5D", x = -8.8, y= 31) +
   labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
@@ -392,5 +392,5 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
 
 plot_regions_agg_log + plot_points_agg_log + plot_diffs_agg_log + plot_layout(design = layout)
 
-ggsave("forest_plot_summerised.tif", path = "figs/", width = 15, height = 12)
+ggsave("forest_plot_summerised.pdf", path = "figs/", width = 15, height = 12)
 
