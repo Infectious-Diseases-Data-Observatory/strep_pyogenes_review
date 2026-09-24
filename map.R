@@ -1,12 +1,12 @@
 source("mic_data_load.R")
 
 dd_df = dd_sr %>%
-  mutate(author = str_replace_all(author, "Abd El-Ghany", "Abd El Ghany")) |>
+  # mutate(author = str_replace_all(author, "Abd El-Ghany", "Abd El Ghany")) |>
   group_by(alpha_3_code) %>%
   mutate(sum_iso = sum(count, na.rm = TRUE),
          sum_rows = n(),
          author_year = str_c(author, "-", pub_yr),
-         sum_studies = length(unique(author_year))
+         sum_studies = length(unique(record_id))
          ) %>%
   slice(1) %>%
   ungroup() %>%
