@@ -414,6 +414,9 @@ hist_dat <- dat_raw %>% # from Rhys' aggregate file
                        "Only summarised MIC reported (MIC90)",
                        "Individual MIC reported"))
 
+hist_dat %>%
+  summarise(.by = type, count = sum(count))
+
 x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 
 # for labels on bars:
@@ -481,7 +484,7 @@ p2 <- ggplot(data = hist_dat %>%
   theme_bw() +
   theme(legend.position = "none")
 
-p <- plot_grid(p1, p2, ncol = 1)
+p <- plot_grid(p2, p1, ncol = 1)
 
 ggdraw(p) +
   draw_label("Number of isolates", x = 0, y = 0.5, angle = 90, 
