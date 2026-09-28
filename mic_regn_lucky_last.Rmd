@@ -526,8 +526,10 @@ First let's have a look at raw MICs only:
 ```{r}
 library(MASS)
 
-ordinal_regn_please <- function(dat, bins, ylab, main, 
-                                weight = TRUE, xlower = 1927){
+ordinal_regn_please <- function(dat, bins, ylab,
+                                weight = TRUE, 
+                                xlower = 1927,
+                                xupper = 2024){
   dat <- mutate(dat,
                 mic_binned = cut(mic, 
                                  breaks = c(0, bins), 
@@ -541,8 +543,9 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
                 weights = count, # here, weights are frequencies
                 method = "probit") # fails to converge under logit: fatter tail
   } else {
+    message("here")
     model <- polr(mic_binned ~ isolate_yr, 
-              data = dat, 
+              data = dat %>% uncount(count), 
               Hess = TRUE) 
   }
   
@@ -554,8 +557,8 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
   print(summary(model))
   # note the slope here
   
-  new_data = data.frame(isolate_yr = seq(xlower, 
-                                         max(dat$isolate_yr) + 2))
+  new_data = data.frame(isolate_yr = seq(xlower + 2, 
+                                         xupper - 2))
   preds <- predict(model, 
                    newdata = new_data,
                    type = "probs") %>%
@@ -596,7 +599,7 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
                 aes(ymin = lower, ymax = height, fill = name, x = isolate_yr), 
                 alpha = 0.5) +
     scale_fill_discrete("MIC interval") +
-    scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+    scale_size_continuous(range = c(1,10), name = "Number of\nisolates", 
                           breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
     # (the -1 is because I removed the bottom bin)
     # this is a bit gross but I've put the line in the middle
@@ -609,9 +612,12 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
     geom_rect(data = preds_change,
               aes(xmin = xmin, xmax = xmax, ymin = ymin, ymax = ymax),
               col = "black", fill = NA) +
+    scale_x_continuous(breaks = seq(ceiling(xlower / 10) * 10,
+                                    floor(xupper / 10) * 10, 10),
+                       minor_breaks = NULL, expand = FALSE,
+                       limits = c(xlower - 0.1, xupper + 0.1)) +
     xlab("Year") +
     ylab(ylab) +
-    labs(title = main) +
     theme_bw() +
     theme(
       legend.box = "horizontal",
@@ -621,16 +627,22 @@ ordinal_regn_please <- function(dat, bins, ylab, main,
     )
 }
 
+bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128, 0.256)
+# bins = 2**(log2(bins) - 0.5)
+
 # that's interesting .. this slips down a class!
-p1 <- ordinal_regn_please(dat_nos_only %>% mutate(mic = micnos_1),
-                    bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
-                    xlower = 1965, ylab = "MIC",
-                    main = "(b) Studies documenting MIC for all isolates")
+p1 <- ordinal_regn_please(dat_nos_only %>% 
+                            mutate(mic = micnos_1),
+                    # bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
+                    weight = TRUE,
+                    bins = bins, xupper = 2025,
+                    xlower = 1964, ylab = "MIC")
 p1
 
 p2 <- ordinal_regn_please(dat_agg %>% mutate(mic = mic_90_agg),
-                    bins = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.128),
-                    ylab = "MIC90", main = "(a) MIC90: all studies")
+                    bins = bins,
+                    xlower = 1925, xupper = 2025,
+                    ylab = "MIC90")
 
 p2
 
@@ -641,14 +653,35 @@ Caption: Ordinal regression of MIC data (as in Figure 4): coloured regions repre
 Here we put the subplots together:
 
 ```{r}
-p <- plot_grid(p2 + theme(legend.position = "none"), 
-          p1 + theme(legend.position = "none"),
-          rel_widths = c(0.6, 0.45))
+# p <- plot_grid(p2 + theme(legend.position = "none"), 
+#           p1 + theme(legend.position = "none"),
+#           rel_widths = c(0.6, 0.45))
+# 
+# plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.25))
+# 
+# ggsave("figs/ordinal_regression.png", height = 7, width = 9, bg = "transparent")
+# ggsave("figs/ordinal_regression.svg", height = 7, width = 9, bg = "transparent")
 
-plot_grid(p, get_legend(p2), ncol = 1, rel_heights = c(0.8, 0.25))
 
-ggsave("figs/ordinal_regression.png", height = 7, width = 9, bg = "transparent")
-ggsave("figs/ordinal_regression.svg", height = 7, width = 9, bg = "transparent")
+p <- plot_grid(
+          p1 + theme(legend.position = c(-0.5, 0.5),
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 212, 
+                                          unit = "pt")),
+          p2 + theme(legend.position = "none",
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, 
+                                          unit = "pt")), 
+          labels = c("(a) Trend based on individual MICs",
+                     "(b) Trend based on summarised MICs"),
+          label_fontface = "plain",
+          nrow = 2,
+          #label_x = c(0.07, 0.45), 
+          label_x = c(0.45, 0.07), 
+          hjust = 0, label_size = 12)
+
+p
+
+ggsave("figs/ordinal_regression.png", height = 9, width = 8, bg = "white")
+ggsave("figs/ordinal_regression.svg", height = 9, width = 8, bg = "white")
 ```
 
 
