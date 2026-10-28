@@ -190,9 +190,11 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
   scale_y_discrete(expand = c(0,2))+
   annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D") +
   geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo_ori, 3), ", ", round(ci_change_hi_ori, 3), "]"), x = 6.5),
             hjust = 1, colour = "#5D5D5D")+
+  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D")+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(-1,9))
 
@@ -384,9 +386,11 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
   scale_y_discrete(expand = c(0,2))+
   annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
   annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D") +
+  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D") +
   geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D")+
   geom_text(aes(label = str_c("[", round(ci_change_lo_ori, 3), ", ", round(ci_change_hi_ori, 3), "]"), x = 6.5),
             hjust = 1, colour = "#5D5D5D")+
+  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D")+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(-1,9))
 
