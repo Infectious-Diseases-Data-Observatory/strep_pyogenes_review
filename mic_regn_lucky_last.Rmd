@@ -241,6 +241,7 @@ Common attributes:
 
 ```{r}
 YLIM <- range(c(dat_agg$mic_90_agg, dat_nos_only$micnos_1))
+YLIM <- c(0.0018, 0.128)
 Y_LOWER <- log2(0.0018)
 SIZE_LIMS <- range(c(dat_agg$count, dat_nos_only$count))
 yticks <- c(0, 0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
@@ -427,7 +428,7 @@ to_lab <- hist_dat %>%
   mutate(nudge_yy = ifelse(type == "Individual MIC reported", 
                           1200, 300),
          hjustt = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
-         vjustt = ifelse(count %in% c(2727, 3097, 2030), 0.5, 1),
+         vjustt = ifelse(count %in% c(2100), 0, 0.5),
          #nudge_x = ifelse(count %in% c(2727, 2100), 0, 0.5),
          lab = ifelse(count %in% c(2727, 3097, 2030),
                       paste0("MIC:\n", value, "\n(", count, ")"),
@@ -516,6 +517,211 @@ ggsave("figs/all_mics.svg", height = 6, width = 6)
 #   theme_bw() +
 #   theme(legend.position = "none")
 ```
+
+## Combine the two figures above for the journal on common axes
+
+```{r mic_trend_and_effort}
+X_LOWER <- 1965
+
+# here comes the model again:
+newdata <- data.frame(isolate_yr = seq(X_LOWER, max(dat_nos_only$isolate_yr) + 2))
+ci <- predict(mod_weighted_nos_only, 
+                 newdata = newdata,
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat_nos_only$isolate_yr) + 2))
+
+mutate(ci, diff = upr - lwr) %>% arrange(diff)
+
+p1 <- ggplot(dat_nos_only %>%
+            filter(!is.na(micnos_1)) %>%
+            group_by(isolate_yr, micnos_1, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = 2**fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = micnos_1,
+                 col = who_name, 
+                 size = count), alpha = 0.5,
+             show.legend = TRUE) +
+  scale_color_manual(name = "WHO Region", values = pal, drop = FALSE) + 
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                        breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
+  scale_x_continuous(limits = c(X_LOWER, 2023), expand = c(0,0), 
+                     breaks = seq(1970, 2020, 10), minor_breaks = NULL) +
+  labs(x = "Year", y = expression("MIC (" * mu * "g/mL)")) +
+  coord_trans(y = "log2", ylim = YLIM) + 
+  theme_bw()
+
+p1
+
+X_LOWER <- 1927
+
+# here comes the model again:
+newdata <- data.frame(isolate_yr = seq(X_LOWER, max(dat_agg$isolate_yr) + 2))
+ci <- predict(mod_weighted_agg, 
+                 newdata = newdata,
+                 interval = "confidence") %>%
+  as.data.frame() %>%
+  mutate(lwr = ifelse(lwr < Y_LOWER, Y_LOWER, lwr),
+         isolate_yr = seq(X_LOWER, max(dat_agg$isolate_yr) + 2))
+
+mutate(ci, diff = upr - lwr) %>% arrange(diff)
+
+p2 <- ggplot(dat_agg %>%
+            filter(!is.na(mic_90_agg)) %>%
+            group_by(isolate_yr, mic_90_agg, who_name) %>%
+            summarise(count = sum(count)) %>%
+            mutate(who_name = factor(who_name, levels = c("Africa",
+                                                          "Americas",
+                                                          "Eastern Mediterranean",
+                                                          "Europe",
+                                                          "Southeast Asia",
+                                                          "Western Pacific",
+                                                          "Not assigned"))) %>%
+         arrange(desc(count))) +
+  geom_ribbon(data = ci, aes(ymin = 2**lwr, ymax = 2**upr, x = isolate_yr),
+              alpha = 0.5, fill = "grey", colour = NA) +
+  geom_line(data = ci, aes(x = isolate_yr, y = 2**fit), 
+            colour = "darkgrey", linewidth = 0.8) +
+  geom_point(aes(x = isolate_yr, y = mic_90_agg,
+                 col = who_name, 
+                 size = count), alpha = 0.5) +
+  scale_color_discrete(name = "WHO Region", 
+                       type = pal,
+                       guide = guide_legend(override.aes = list(size = 5),
+                                            ncol = 2),
+                       drop = FALSE) +
+  scale_size_continuous(range = c(1,10), name = "Number of isolates", 
+                        breaks = c(1, 10, 100, 1000), limits = SIZE_LIMS) +
+  scale_y_continuous(breaks = yticks, minor_breaks = NULL) +
+  scale_x_continuous(limits = c(X_LOWER, 2023), expand = c(0,0),
+                     breaks = seq(1930, 2020, 10), minor_breaks = NULL) +
+  xlab("Year") + 
+  ylab(expression("MIC90 (" * mu * "g/mL)")) +
+  coord_trans(y = "log2", ylim = YLIM) + 
+  theme_bw() +
+  theme(
+    legend.box = "horizontal",
+    legend.box.just = "top",
+    plot.background = element_rect(fill = "transparent", colour = "transparent")
+  )
+
+p2
+
+# what happened to 0.004?
+p3 <- ggplot(data = hist_dat %>%
+               filter(type == "Only summarised MIC reported (MIC90)")) +
+  geom_bar(aes(x = logmic, y = count, 
+           fill = type), 
+           alpha = 0.6, 
+           stat = "identity",
+           width = 0.05) +
+  # here are labels on top of higher bars:
+  geom_text(aes(x = logmic, y = count, label = lab, vjust = vjustt), 
+            data = to_lab %>%
+               filter(type == "Only summarised MIC reported (MIC90)"),
+             nudge_y = 300,
+            hjust = 0,
+            size = 2.5) +
+  facet_wrap(~ type, ncol = 1, scales = "free_y") +
+  scale_x_continuous(breaks = log2(x_breaks),
+                     labels = x_breaks,
+                     limits = log2(YLIM),
+                     minor_breaks = NULL) +
+  scale_y_continuous(minor_breaks = NULL, limits = c(0, 13000)) +
+  scale_fill_manual(values = pal[2]) +
+  ylab("Number of isolates") +
+  xlab(expression("MIC90 (" * mu * "g/mL)")) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip()
+
+p3
+
+p4 <- ggplot(data = hist_dat %>%
+               filter(type == "Individual MIC reported")) +
+  geom_bar(aes(x = logmic, y = count, 
+           fill = type), 
+           alpha = 0.6, 
+           stat = "identity",
+           width = 0.05) +
+  # here are labels on top of higher bars:
+  geom_text(aes(x = logmic, y = count, label = lab), 
+            data = to_lab %>%
+               filter(type == "Individual MIC reported"),
+             nudge_y = 100,
+            hjust = 0,
+            #vjust = 1,
+            #angle = -90,
+            size = 2.5) +
+  facet_wrap(~ type, ncol = 1, scales = "free_y") +
+  scale_x_continuous(breaks = log2(x_breaks),
+                      labels = x_breaks,
+                      limits = log2(YLIM),
+                     minor_breaks = NULL) +
+  scale_y_continuous(minor_breaks = NULL, limits = c(0, 3500)) +
+  scale_fill_manual(values = pal[3]) +
+  ylab("Number of isolates") +
+  xlab(expression("MIC (" * mu * "g/mL)")) +
+  theme_bw() +
+  theme(legend.position = "none") +
+  coord_flip()
+
+p4
+
+p <- plot_grid(
+          p1 + theme(legend.position = c(-0.5, 0.5),
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 215, 
+                                          unit = "pt")),
+          p2 + theme(legend.position = "none",
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, 
+                                          unit = "pt")), 
+          labels = c("(a) Trend based on individual MICs",
+                     "(b) Trend based on summarised MICs"),
+          label_fontface = "plain",
+          nrow = 2,
+          label_x = c(0.45, 0.07), 
+          hjust = 0, label_size = 12)
+
+p <- plot_grid(p, 
+      plot_grid(p4 + theme(plot.margin = margin(t = 20, r = 5, b = 0, l = 10, 
+                                          unit = "pt"),
+                           strip.background = element_blank(),
+                           strip.text = element_blank()), 
+                p3 + theme(plot.margin = margin(t = 20, r = 5, b = 0, l = 10, 
+                                          unit = "pt"),
+                           strip.background = element_blank(),
+                           strip.text = element_blank()), ncol = 1,
+                labels = c("(c) Counts of individual MICs",
+                           "(d) Counts of summarised MICs"),
+          label_fontface = "plain",
+          label_x = 0.1,
+          hjust = 0, label_size = 12), 
+      ncol = 2, 
+               rel_widths = c(1, 0.4), align = "v") 
+
+ggsave("figs/mic_trends_and_efforts.png", height = 8, width = 10, bg = "white")
+ggsave("figs/mic_trends_and_efforts.svg", height = 8, width = 10, bg = "white")
+
+# ggdraw(p) +
+#   draw_label("Number of isolates", x = 0, y = 0.5, angle = 90, 
+#              vjust = 1.5, size = 12)
+
+```
+
+
 
 ## Ordinal regression
 
