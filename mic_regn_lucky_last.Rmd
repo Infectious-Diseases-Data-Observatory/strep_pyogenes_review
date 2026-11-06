@@ -562,7 +562,15 @@ p1 <- ggplot(dat_nos_only %>%
                      breaks = seq(1970, 2020, 10), minor_breaks = NULL) +
   labs(x = "Year", y = expression("MIC (" * mu * "g/mL)")) +
   coord_trans(y = "log2", ylim = YLIM) + 
-  theme_bw()
+  theme_bw() +
+  theme(
+    legend.text=element_text(size=10),
+    legend.box = "horizontal",
+    legend.box.just = "top",
+    legend.background = element_rect(fill = NA),
+    plot.background = element_rect(fill = "transparent", colour = "transparent")
+  ) +
+  guides(size = guide_legend(order = 2), col = guide_legend(order = 1))
 
 p1
 
@@ -611,12 +619,12 @@ p2 <- ggplot(dat_agg %>%
   xlab("Year") + 
   ylab(expression("MIC90 (" * mu * "g/mL)")) +
   coord_trans(y = "log2", ylim = YLIM) + 
-  theme_bw() +
-  theme(
-    legend.box = "horizontal",
-    legend.box.just = "top",
-    plot.background = element_rect(fill = "transparent", colour = "transparent")
-  )
+  theme_bw() #+
+  # theme(
+  #   legend.box = "horizontal",
+  #   legend.box.just = "top",
+  #   plot.background = element_rect(fill = "transparent", colour = "transparent")
+  # )
 
 p2
 
@@ -634,7 +642,7 @@ p3 <- ggplot(data = hist_dat %>%
                filter(type == "Only summarised MIC reported (MIC90)"),
              nudge_y = 300,
             hjust = 0,
-            size = 2.5) +
+            size = 3) +
   facet_wrap(~ type, ncol = 1, scales = "free_y") +
   scale_x_continuous(breaks = log2(x_breaks),
                      labels = x_breaks,
@@ -665,7 +673,7 @@ p4 <- ggplot(data = hist_dat %>%
             hjust = 0,
             #vjust = 1,
             #angle = -90,
-            size = 2.5) +
+            size = 3) +
   facet_wrap(~ type, ncol = 1, scales = "free_y") +
   scale_x_continuous(breaks = log2(x_breaks),
                       labels = x_breaks,
@@ -683,10 +691,10 @@ p4
 
 p <- plot_grid(
           p1 + theme(legend.position = c(-0.5, 0.5),
-                     plot.margin = margin(t = 20, r = 0, b = 0, l = 215, 
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 230,#l = 215, 
                                           unit = "pt")),
           p2 + theme(legend.position = "none",
-                     plot.margin = margin(t = 20, r = 0, b = 0, l = 5, 
+                     plot.margin = margin(t = 20, r = 0, b = 0, l = 20, #l = 5, 
                                           unit = "pt")), 
           labels = c("(a) Trend based on individual MICs",
                      "(b) Trend based on summarised MICs"),
@@ -710,10 +718,11 @@ p <- plot_grid(p,
           label_x = 0.1,
           hjust = 0, label_size = 12), 
       ncol = 2, 
-               rel_widths = c(1, 0.4), align = "v") 
+               rel_widths = c(1, 0.45), align = "v") 
 
-ggsave("figs/mic_trends_and_efforts.png", height = 8, width = 10, bg = "white")
-ggsave("figs/mic_trends_and_efforts.svg", height = 8, width = 10, bg = "white")
+HEIGHT <- 6.2
+ggsave("figs/mic_trends_and_efforts.png", height = HEIGHT, width = HEIGHT * 1.8, bg = "white")
+ggsave("figs/mic_trends_and_efforts.svg", height = HEIGHT, width = HEIGHT * 1.8, bg = "white")
 
 # ggdraw(p) +
 #   draw_label("Number of isolates", x = 0, y = 0.5, angle = 90, 
