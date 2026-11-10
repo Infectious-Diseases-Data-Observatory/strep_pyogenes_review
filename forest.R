@@ -137,8 +137,9 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         strip.text = element_blank(),
         plot.title = element_markdown(lineheight = 1.1),
         legend.position = "top",
-        axis.text.x = element_text(size = 10),
+        axis.text.x = element_text(size = 14),
         axis.text.y = element_blank(),
+        axis.title.x = element_text(size = 14),
         panel.grid.minor.x = element_blank()) +
   guides(color = guide_legend(override.aes = list(size = 10),
                               order = 1)) +
@@ -149,12 +150,12 @@ plot_points = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9),
             data = forest_data_pairs %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
-            hjust = 1, show.legend = FALSE) +
+            hjust = 1, show.legend = FALSE, size = 4.5) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.25),
             data = forest_data_pairs %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
-            hjust = 1, show.legend = FALSE) +
-  annotate("text", label = "Number of isolates (studies)", size = 3.5,
+            hjust = 1, show.legend = FALSE, size = 4.5) +
+  annotate("text", label = "Number of \nisolates (studies)", size = 4.5,
            colour = "#5D5D5D", x = -8.8, y= 31) +
   labs(x = "Mean MIC (log2 scale)",
        y = "",
@@ -172,7 +173,7 @@ plot_regions = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
-        axis.text.y = element_text(size = 12))+
+        axis.text.y = element_text(size = 14))+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
 
@@ -188,13 +189,13 @@ plot_diffs = ggplot(forest_data_pairs %>% filter(alpha_3_code != "GLOBAL"),
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D") +
-  geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D")+
+  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D", size = 4.5)+
   geom_text(aes(label = str_c("[", round(ci_change_lo_ori, 3), ", ", round(ci_change_hi_ori, 3), "]"), x = 6.5),
-            hjust = 1, colour = "#5D5D5D")+
-  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D")+
+            hjust = 1, colour = "#5D5D5D", size = 4.5)+
+  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D", size = 4.5)+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(-1,9))
 
@@ -334,7 +335,8 @@ plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !=
         plot.title = element_markdown(lineheight = 1.1),
         legend.position = "top",
         axis.text.y = element_blank(),
-        axis.text.x = element_text(size = 10),
+        axis.text.x = element_text(size = 14),
+        axis.title.x = element_text(size = 14),
         panel.grid.minor.x = element_blank()) +
   guides(color = guide_legend(override.aes = list(size = 10),
                               order = 1)) +
@@ -345,13 +347,13 @@ plot_points_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !=
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -9),
             data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 1, alpha_3_code != "GLOBAL"),                  # mean_grp
-            hjust = 1, show.legend = FALSE) +
+            hjust = 1, show.legend = FALSE, size = 4.5) +
   geom_text(mapping = aes(label = str_c(n, " (", n_studies, ")"), x = -8.25),
             data = forest_mic_agg_pairs_log %>%
               filter(mean_grp == 2, alpha_3_code != "GLOBAL"),                  # mean_grp
-            hjust = 1, show.legend = FALSE) +
-  annotate("text", label = "Number of isolates (studies)", size = 3.5,
-            colour = "#5D5D5D", x = -8.8, y= 31) +
+            hjust = 1, show.legend = FALSE, size = 4.5) +
+  annotate("text", label = "Number of \nisolates (studies)",
+            colour = "#5D5D5D", x = -8.8, y= 31, size = 4.5) +
   labs(x = "Mean MIC (log2 scale)",
        y = "",
        size = "Number of Samples",
@@ -368,7 +370,7 @@ plot_regions_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code !
         axis.line = element_blank(),
         axis.ticks = element_blank(),
         axis.text.x = element_blank(),
-        axis.text.y = element_text(size = 12))+
+        axis.text.y = element_text(size = 14))+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(0,1))
 
@@ -384,13 +386,13 @@ plot_diffs_agg_log = ggplot(forest_mic_agg_pairs_log %>% filter(alpha_3_code != 
         axis.ticks = element_blank(),
         axis.text.x = element_blank())+
   scale_y_discrete(expand = c(0,2))+
-  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D") +
-  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D") +
-  geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D")+
+  annotate("text", label = "Difference in \nmean MIC", x = 1, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  annotate("text", label = "CI of \ndifference", x = 5, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  annotate("text", label = "Mean Year", x = 8, y = 31.25, colour = "#5D5D5D", size = 4.5) +
+  geom_text(aes(label = round(change_mean_ori,3), x = 1), colour = "#5D5D5D", size = 4.5)+
   geom_text(aes(label = str_c("[", round(ci_change_lo_ori, 3), ", ", round(ci_change_hi_ori, 3), "]"), x = 6.5),
-            hjust = 1, colour = "#5D5D5D")+
-  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D")+
+            hjust = 1, colour = "#5D5D5D", size = 4.5)+
+  geom_text(aes(label = mean_year, x = 8), colour = "#5D5D5D", size = 4.5)+
   labs(x = "", y = "") +
   coord_cartesian(xlim = c(-1,9))
 
