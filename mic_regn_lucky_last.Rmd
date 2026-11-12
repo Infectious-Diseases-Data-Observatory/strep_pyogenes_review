@@ -421,6 +421,8 @@ hist_dat %>%
 
 x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12)
 
+xlim = c(0.0019, 0.15)
+
 # for labels on bars:
 to_lab <- hist_dat %>%
   # only highest ones:
@@ -436,7 +438,7 @@ to_lab <- hist_dat %>%
                       paste0(mic, ":\n", value, "\n(n = ", countstr, ")"),
                       paste0(mic, ": ", value, "\n(n = ", countstr, ")")))
 
-xlim = c(0.0019, 0.15)
+
 
 p1 <- ggplot(data = hist_dat %>%
                filter(type == "Only summarised MIC reported (MIC90)")) +
@@ -632,21 +634,49 @@ p2 <- ggplot(dat_agg %>%
 
 p2
 
-hist_dat <- bind_rows(
-  dat_nos_only %>% 
-    rename(value = micnos_1) %>%
-    summarise(count = sum(count), .by = c(value)) %>%
-    mutate(type = "mic_nos"),
-  dat_agg %>%
-    rename(value = mic_90_agg) %>%
-    summarise(count = sum(count), .by = c(value)) %>%
-    mutate(type = "mic90")) %>%
-  mutate(logmic = log2(value))
+# This snippet to show all data in (d), including MIC90s of MICs in (c)
+# hist_dat <- bind_rows(
+#   dat_nos_only %>% 
+#     rename(value = micnos_1) %>%
+#     summarise(count = sum(count), .by = c(value)) %>%
+#     mutate(type = "mic_nos"),
+#   dat_agg %>%
+#     rename(value = mic_90_agg) %>%
+#     summarise(count = sum(count), .by = c(value)) %>%
+#     mutate(type = "mic90")) %>%
+#   mutate(logmic = log2(value))
+# 
+# to_lab <- hist_dat %>%
+#   # only highest ones:
+#   filter((type == "mic90" & count > 5000) |
+#            (type == "mic_nos" & count > 1000)) %>%
+#   mutate(nudge_yy = ifelse(type == "mic_nos", 
+#                           1200, 300),
+#          countstr = format(count, big.mark = ","),
+#          mic = ifelse(type == "mic_nos", "MIC", "MIC90"),
+#          hjustt = ifelse(count %in% c(2727, 2100, 3097), 0, 0.5),
+#          vjustt = ifelse(count %in% c(2100), 0, 0.5),
+#          lab = ifelse(count %in% c(2727, 3097, 2030),
+#                       paste0(mic, ":\n", value, "\n(n = ", countstr, ")"),
+#                       paste0(mic, ": ", value, "\n(n = ", countstr, ")")))
 
+hist_dat <- dat_raw %>% # from Rhys' aggregate file
+  filter(!is.na(mic90_1)) %>%
+  bind_rows(dat_nos_only) %>% # NOS only
+  pivot_longer(cols = c(micnos_1, mic90_1), names_to = "type") %>%
+  filter(!is.na(value)) %>%
+  mutate(value = round(value, digits = 4)) %>%
+  summarise(count = sum(count), .by = c(value, type)) %>%
+  mutate(logmic = log2(value)) %>%
+  mutate(type = ifelse(type == "mic90_1", 
+                       "mic90",
+                       "mic_nos"))
+
+# for labels on bars:
 to_lab <- hist_dat %>%
   # only highest ones:
-  filter((type == "mic90" & count > 5000) |
-           (type == "mic_nos" & count > 1000)) %>%
+  filter((type == "mic90" & count > 2000) |
+            (type == "mic_nos" & count > 1000)) %>%
   mutate(nudge_yy = ifelse(type == "mic_nos", 
                           1200, 300),
          countstr = format(count, big.mark = ","),
@@ -656,6 +686,8 @@ to_lab <- hist_dat %>%
          lab = ifelse(count %in% c(2727, 3097, 2030),
                       paste0(mic, ":\n", value, "\n(n = ", countstr, ")"),
                       paste0(mic, ": ", value, "\n(n = ", countstr, ")")))
+
+x_breaks = c(0.002, 0.004, 0.008, 0.016, 0.032, 0.064, 0.12) 
 
 
 p3 <- ggplot(data = hist_dat %>%
